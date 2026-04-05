@@ -11,18 +11,20 @@ export default function webSocketConnection(server) {
 
     ws.on("message", (raw) => {
       let msg;
-
+      
       try {
         msg = JSON.parse(raw);
+        switch(msg.type){
+          case "INIT" : addUserToOnlineUsers(ws,onlineUsers); break;
+          case "MESSAGE" :handleMessage(ws, msg, onlineUsers); break;
+        }
       } catch {
         console.log("Invalid JSON");
         return;
       }
-
-      handleMessage(ws, msg, onlineUsers);
     });
 
-    ws.on("close", () => handleDisconnect(ws));
+    ws.on("close", () => handleDisconnect(ws,onlineUsers));
     ws.on("error", (err) => console.error(`[!] WS error:`, err.message));
   });
 }
