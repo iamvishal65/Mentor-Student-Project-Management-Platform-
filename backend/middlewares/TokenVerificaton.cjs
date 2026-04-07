@@ -1,15 +1,13 @@
-const jwt = require("jsonwebtoken");
-
+const verifyToken=require('../services/tokenVerification')
 
 module.exports = async function tokenVerification(req, res, next) {
   try {
     const token = req.cookies.token;
-    
     if (!token) {
       return res.status(409).json({ message: "you don't provide the token" });
     }
-   
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyToken(token);
+    if(!decoded) return res.status(409).json({ message: "invalid token" })
     req.token = decoded;
     next();
   } catch (error) {

@@ -1,7 +1,6 @@
 function addUserToOnlineUsers(ws, onlineUsers) {
   if (!ws || !ws.id) return;
   if (onlineUsers.has(ws.id)) return;
-
   onlineUsers.set(ws.id, ws);
 }
 async function handleMessage(ws, msg, onlineUsers) {
@@ -9,10 +8,13 @@ async function handleMessage(ws, msg, onlineUsers) {
     if (!ws || !ws.id) return;
     if (!onlineUsers.has(ws.id)) return;
     await saveMessage(msg, ws.id);
-    const receiver = getReceiver(ws, onlineUsers);
-    send(receiver, msg);
+    const receiver = getReceiver(msg, onlineUsers);
+    if(receiver)send(receiver, msg);
     
-  } catch (error) {}
+    
+  } catch (error) {
+    
+  }
 }
 function handleDisconnect(ws, onlineUsers) {}
 

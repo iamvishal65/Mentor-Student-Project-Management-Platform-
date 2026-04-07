@@ -11,6 +11,7 @@ export default function webSocketConnection(server) {
 
     ws.on("message", (raw) => {
       let msg;
+      ws.id=userId;
       
       try {
         msg = JSON.parse(raw);

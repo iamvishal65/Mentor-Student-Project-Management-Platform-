@@ -74,7 +74,6 @@ async function checkConnection(req, res) {
     if (!userId) return res.status(401).json({ message: "invalid token" });
 
     const check = await userAllowed(userId);
-    console.log("hi");
 
     if (!check) return res.json({ connected: false });
     else return res.json({ connected: true });

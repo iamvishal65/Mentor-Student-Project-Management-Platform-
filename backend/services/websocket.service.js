@@ -14,7 +14,7 @@ async function saveMessage(msg, id) {
   const recipientId = msg.id;
   const message = msg.text;
 
-  const participants = { senderId, recipientId }.sort();
+  const participants = [senderId, recipientId].sort();
   const conversation = await conversationModel.findOneAndUpdate(
     { participants },
     {
@@ -39,11 +39,19 @@ async function saveMessage(msg, id) {
     conversationId: conversation._id,
     message: message,
   });
-
-  
 }
-function getReciver(ws,onlineUsers){
-  return onlineUsers.has(ws.id);
+function getReciver(msg, onlineUsers) {
+  return onlineUsers.has(msg.id);
 }
 
-module.exports = { handleSend, saveMessage,getReciver};
+function sendError(ws, message, code = "ERROR") {
+  ws.send(
+    JSON.stringify({
+      type: "ERROR",
+      code,
+      message,
+    }),
+  );
+}
+
+module.exports = { handleSend, saveMessage, getReciver ,sendError};

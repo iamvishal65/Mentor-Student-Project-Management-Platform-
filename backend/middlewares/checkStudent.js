@@ -3,11 +3,8 @@ const userModel = require("../models/User.model");
 module.exports=async function checkStudent(req, res, next) {
   try {
     const id = req.token.id;
-   
-    
+
     const user = await userModel.findById(id);
-    
-    
     if (!user) {
       const err = new Error("user not registered");
       err.statusCode = 401;
