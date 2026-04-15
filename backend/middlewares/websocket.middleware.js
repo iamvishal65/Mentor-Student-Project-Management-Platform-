@@ -1,6 +1,5 @@
 const verifyToken = require("../services/tokenVerification");
 
-
 function parseCookies(cookieHeader) {
   const cookies = {};
   if (!cookieHeader) return cookies;
@@ -27,7 +26,7 @@ function checkUser(ws, req, next) {
       return;
     }
     // attach to ws (important)
-    ws.user = decoded;
+    ws.id = decoded.id;
     next();
   } catch (error) {
     ws.close();
@@ -36,4 +35,17 @@ function checkUser(ws, req, next) {
 
 function chekUserPermission(ws, req, next) {}
 
-module.exports={checkUser,chekUserPermission};
+function applyMiddleware(ws, req, middlewares, handler) {
+  let i = 0;
+  function next() {
+    if (i < middlewares.length) {
+      const mw = middlewares[i++];
+      mw(ws, req, next);
+    } else {
+      handler();
+    }
+  }
+  next();
+}
+
+module.exports = { checkUser, chekUserPermission,applyMiddleware };

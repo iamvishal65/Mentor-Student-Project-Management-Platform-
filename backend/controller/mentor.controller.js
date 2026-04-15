@@ -1,16 +1,18 @@
-const MentorApplication = require("../models/mentorApplication.model");
-const { checkMentor } = require("../services/mentor.service");
+const { checkMentor, checkMentorApplication, checkApplicationStatus } = require("../services/mentor.service");
 const { mentorregisterSchema } = require("../validators/mentor.validator");
 async function applyForMentor(req, res) {
   try {
     const userId = req.user.id;
 
-    const existing = await MentorApplication.findOne({ userId });
-    if (existing) {
-      return res.status(400).json({ message: "Already applied" });
-    }
+    //add if else or switch by checking remaning day
 
-    await MentorApplication.create({ userId });
+    // const existing = await checkMentorApplication(userId);
+    // if (existing) {
+    //   const applicationStatus=existing.status;
+    //   const nextEligibleAt=existing.nextEligibleAt;
+    //   res.status(201).json({ message: "User already applied" ,status:applicationStatus,nextEligibleAt:nextEligibleAt});
+    // }
+    // const newApplication=
 
     res.status(201).json({ message: "Mentor application submitted" });
   } catch (error) {

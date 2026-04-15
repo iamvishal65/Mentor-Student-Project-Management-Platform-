@@ -21,4 +21,5 @@ const mentorApplicationSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model("MentorApplication", mentorApplicationSchema);
+ const MentorApplicationModel= mongoose.model("MentorApplicationModel", mentorApplicationSchema);
+ module.exports=MentorApplicationModel;

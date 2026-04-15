@@ -1,4 +1,4 @@
-const messageModel = require("../models/Message.model");
+const messageModel = require("../models/Message.model.cjs");
 const conversationModel = require("../models/conversation.model");
 
 function handleSend(ws, msg) {
@@ -35,7 +35,7 @@ async function saveMessage(msg, id) {
   );
 
   const newMessage = await messageModel.create({
-    senderid: senderId,
+    senderId: senderId,
     conversationId: conversation._id,
     message: message,
   });

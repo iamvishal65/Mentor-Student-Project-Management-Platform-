@@ -11,19 +11,25 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const navLinks = {
-    STUDENT: [
-      { label: "My Projects", path: "/myProject" },
+    user: [
+      { label: "Home", path: "/" },
       { label: "All Projects", path: "/allProject" },
     ],
+    STUDENT: [
+      { label: "Home", path: "/" },
+      { label: "My Projects", path: "/myProject" },
+      { label: "All Projects", path: "/allProject" },
+      {label: "Ask Mentor", path: "/chatPage" },
+    ],
     MENTOR: [
+      { label: "Home", path: "/" },
       { label: "All Projects", path: "/allProject" },
       { label: "Messages", path: "/messages" },
     ],
   };
  
   const role=data.roles;
-  const t=navLinks[role];
-   console.log(t); 
+  const t=navLinks[role]; 
   async function handleLogout() {
     try {
       const res = await axiosInstance.post("/api/auth/user/logout");
@@ -42,7 +48,7 @@ const Navbar = () => {
                  shadow-md px-6 z-30"
     >
       {/* Logo */}
-      <div className="text-white text-2xl font-bold select-none">DevDash</div>
+      <div className="text-white text-2xl font-bold select-none">CollabForge</div>
 
       {/* Desktop Menu */}
       <div className="hidden md:flex items-center space-x-8 text-gray-100 font-medium">

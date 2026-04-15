@@ -1,5 +1,5 @@
-const mentorModel=require('../models/Mentor.model,')
-
+const mentorModel=require('../models/Mentor.model,');
+const MentorApplicationModel=require('../models/mentorApplication.model')
 
 
 async function checkMentor(userId) {
@@ -24,7 +24,13 @@ async function createMentor({
   return newMentor;
 }
 
+async function checkMentorApplication(userId) {
+  return MentorApplicationModel.findOne({ userId })
+}
+ async function checkApplicationStatus(applicationId){
+  const application=MentorApplicationModel.findOne({ applicationId });
+  return application.status;
+ }
 
 
-
-module.exports={createMentor,checkMentor}
+module.exports={createMentor,checkMentor,checkMentorApplication,checkApplicationStatus}
