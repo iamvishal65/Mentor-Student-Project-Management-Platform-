@@ -4,10 +4,14 @@ const router=express.Router();
 const tokenVerification=require('../middlewares/TokenVerificaton.cjs')
 const studentController=require('../controller/student.Controller.js');
 
+
+
+
 router.post('/user/register',authController.Register);
 router.post('/user/login',authController.Login);
 router.get('/logincheck',tokenVerification, authController.loginCheck)
 router.post('/user/logout',authController.logout);
 router.post('/student/register',tokenVerification,studentController.registerStudent)
+
 
 module.exports=router;

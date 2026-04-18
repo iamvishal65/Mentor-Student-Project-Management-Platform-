@@ -5,7 +5,7 @@ const cors=require('cors');
 const auth=require('./routes/auth.route')
 const project=require('./routes/projectRoutes')
 const github=require('./routes/github.routes')
-
+const mentorApplication=require('./routes/mentorApplication.route')
 
 app.use(cors({
     origin:process.env.CLIENT_URL,
@@ -18,6 +18,7 @@ app.use(cookieParser());
 app.use('/api/auth',auth)
 app.use('/api/project',project)
 app.use('/api/auth',github)
+app.use('/api/auth',mentorApplication)
 
 
 app.get('/',(_,res)=>{

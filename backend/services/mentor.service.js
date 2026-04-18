@@ -27,10 +27,30 @@ async function createMentor({
 async function checkMentorApplication(userId) {
   return MentorApplicationModel.findOne({ userId })
 }
- async function checkApplicationStatus(applicationId){
-  const application=MentorApplicationModel.findOne({ applicationId });
-  return application.status;
- }
+
+async function reapplyForMentor(todayDate, id) {
+  const nextDate = new Date(todayDate);
+  nextDate.setDate(today.getDate() + 15);
+  if(id)throw Error ("No id");
+  await MentorApplicationModel.findByIdAndUpdate({id},{
+    createdAt:todayDate,
+    nextEligibleAt:nextDate
+  })
+  return nextDate;
+}
+
+async function newApplication(id,todayDate) {
+  const nextDate = new Date(todayDate);
+  nextDate.setDate(today.getDate() + 15);
+  if(id)throw Error ("No id");
+  await MentorApplicationModel.create({
+    userId:id,
+    status:"PENDING",
+    createdAt:todayDate,
+    nextEligibleAt:nextDate
+  })
+  return nextDate;
+}
 
 
-module.exports={createMentor,checkMentor,checkMentorApplication,checkApplicationStatus}
+module.exports={createMentor,checkMentor,checkMentorApplication,reapplyForMentor,newApplication}

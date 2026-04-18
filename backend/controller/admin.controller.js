@@ -2,6 +2,7 @@ const MentorApplication = require("../models/mentorApplication.model");
 const userModel = require("../models/User.model");
 
 async function approveMentor(req, res) {
+  
   const { userId } = req.params;
 
   const application = await MentorApplication.findOne({ userId });
@@ -16,5 +17,16 @@ async function approveMentor(req, res) {
 
   res.json({ message: "Mentor approved" });
 }
+async function allApplicationForMentorRole(req,res) {
+  try {
+    if(!req.roles.include("admin")){ 
+      return res.status(409).json({
+        message: "Not a admin",
+      });
+    }
+  } catch (error) {
+    
+  }
+}
 
-module.exports={approveMentor}
+module.exports={approveMentor,allApplicationForMentorRole}

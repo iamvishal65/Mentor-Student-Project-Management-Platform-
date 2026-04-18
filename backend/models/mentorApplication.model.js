@@ -12,13 +12,13 @@ const mentorApplicationSchema = new mongoose.Schema({
     enum: ["PENDING", "APPROVED", "REJECTED"],
     default: "PENDING"
   },
-  nextEligibleAt: {
-    type:Date
-  },
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  nextEligibleAt: {
+    type:Date
+  },
 });
 
  const MentorApplicationModel= mongoose.model("MentorApplicationModel", mentorApplicationSchema);

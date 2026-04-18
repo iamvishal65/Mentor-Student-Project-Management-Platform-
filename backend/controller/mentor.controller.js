@@ -1,23 +1,100 @@
-const { checkMentor, checkMentorApplication, checkApplicationStatus } = require("../services/mentor.service");
+const {
+  checkMentor,
+  checkMentorApplication,
+  newApplication,
+  reapplyForMentor,
+} = require("../services/mentor.service");
 const { mentorregisterSchema } = require("../validators/mentor.validator");
+async function applicationState(req, res) {
+  try {
+    // ✅ Already mentor
+    if (req.roles.includes("mentor")) {
+      return res.status(409).json({
+        message: "Already a mentor",
+      });
+    }
+
+    const userId = req.user.id;
+    const existing = await checkMentorApplication(userId);
+    const todayDate = new Date();
+
+    // ✅ Existing application
+    if (existing) {
+      if (existing.status !== "APPROVED") {
+        // ❌ Not eligible yet
+        if (todayDate < existing.nextEligibleAt) {
+          return res.status(200).json({
+            message: "User already applied",
+            status: existing.status,
+            nextEligibleAt: existing.nextEligibleAt,
+          });
+        }
+
+        return res.status(200).json({
+          message: "Eligible to reapply",
+          status: "REJECTED",
+          nextEligibleAt: todayDate,
+        });
+      }
+    }
+    return res.status(200).json({
+      message: "User not applied",
+      status:"NOT APPLIED"
+    });
+  } catch (error) {
+    console.error("error is:", error);
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+}
+
 async function applyForMentor(req, res) {
   try {
+    // ✅ Already mentor
+    if (req.roles.includes("mentor")) {
+      return res.status(409).json({
+        message: "Already a mentor",
+      });
+    }
     const userId = req.user.id;
+    const existing = await checkMentorApplication(userId);
+    const todayDate = new Date();
 
-    //add if else or switch by checking remaning day
+    // ✅ Existing application
+    if (existing) {
+      if (existing.status !== "APPROVED") {
+        if (todayDate >= existing.nextEligibleAt) {
+          // ✅ Reapply
+          const newDate = await reapplyForMentor(todayDate, existing.id);
+          return res.status(200).json({
+            message: "Application re-applied",
+            status: "PENDING",
+            nextEligibleAt: newDate,
+          });
+        }
+      }
+      return res.status(200).json({
+            message: "Application approved",
+            status: "APPROVED",
+          });
+    }
 
-    // const existing = await checkMentorApplication(userId);
-    // if (existing) {
-    //   const applicationStatus=existing.status;
-    //   const nextEligibleAt=existing.nextEligibleAt;
-    //   res.status(201).json({ message: "User already applied" ,status:applicationStatus,nextEligibleAt:nextEligibleAt});
-    // }
-    // const newApplication=
+    // ✅ First-time application
+    const nextEligibleAt = await newApplication(userId, todayDate);
 
-    res.status(201).json({ message: "Mentor application submitted" });
+    return res.status(201).json({
+      message: "Mentor application submitted",
+      status: "PENDING",
+      nextEligibleAt,
+    });
   } catch (error) {
-    console.error("error is:" + error);
-    res.status(500).json({ message: error.message, success: false });
+    console.error("error is:", error);
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
   }
 }
 
@@ -51,4 +128,4 @@ async function newMentor(req, res) {
   }
 }
 
-module.exports = { applyForMentor, newMentor };
+module.exports = { applyForMentor, newMentor, applicationState };

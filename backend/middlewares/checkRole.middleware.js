@@ -1,9 +1,9 @@
-const userModel = require("../models/User.model");
+const checkUserById=require('../services/user.services')
 
 module.exports=async function checkRole(req, res, next) {
   try {
-    const id = req.token.id;
-    const user = await userModel.findById(id);
+    const id = req.token._id;
+    const user = await checkUserById(id);
     if (!user) {
       const err = new Error("user not registered");
       err.statusCode = 401;

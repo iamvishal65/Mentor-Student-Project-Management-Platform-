@@ -7,7 +7,7 @@ import { useRecoilState } from "recoil";
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [data,setData]=useRecoilState(userData);
+  const [data, setData] = useRecoilState(userData);
   const navigate = useNavigate();
 
   const navLinks = {
@@ -19,7 +19,7 @@ const Navbar = () => {
       { label: "Home", path: "/" },
       { label: "My Projects", path: "/myProject" },
       { label: "All Projects", path: "/allProject" },
-      {label: "Ask Mentor", path: "/chatPage" },
+      { label: "Ask Mentor", path: "/chatPage" },
     ],
     MENTOR: [
       { label: "Home", path: "/" },
@@ -27,9 +27,9 @@ const Navbar = () => {
       { label: "Messages", path: "/messages" },
     ],
   };
- 
-  const role=data.roles;
-  const t=navLinks[role]; 
+
+  const role = data?.roles || "user";
+  const t = navLinks[role] || [];
   async function handleLogout() {
     try {
       const res = await axiosInstance.post("/api/auth/user/logout");
@@ -48,19 +48,18 @@ const Navbar = () => {
                  shadow-md px-6 z-30"
     >
       {/* Logo */}
-      <div className="text-white text-2xl font-bold select-none">CollabForge</div>
+      <div className="text-white text-2xl font-bold select-none">
+        CollabForge
+      </div>
 
       {/* Desktop Menu */}
       <div className="hidden md:flex items-center space-x-8 text-gray-100 font-medium">
         <ul className="flex space-x-8">
-          {t.map((item,index) => {
-         return(<li key={index} className="cursor-pointer hover:text-blue-400">
-          <Link to={item.path} className="nav-link">
-          {item.label}
-        </Link>
-        </li>)
-        })}
-        
+          {t.map((item, index) => (
+            <li key={index}>
+              <Link to={item.path}>{item.label}</Link>
+            </li>
+          ))}
         </ul>
       </div>
 
@@ -86,7 +85,10 @@ const Navbar = () => {
               >
                 Settings
               </Link>
-              <Link to="/applyForMentor" className="mobile-link">
+              <Link
+                to="/mentorApplication"
+                className="block px-4 py-2 hover:bg-gray-100"
+              >
                 Apply for Mentor
               </Link>
               <button
@@ -180,7 +182,10 @@ const Navbar = () => {
             <Link to="/settings" className="mobile-link">
               Settings
             </Link>
-            <Link to="/applyForMentor" className="mobile-link">
+            <Link
+              to="/mentorApplication"
+              className="block px-4 py-2 hover:bg-gray-100"
+            >
               Apply for Mentor
             </Link>
             <button className="text-left mobile-link" onClick={handleLogout}>
