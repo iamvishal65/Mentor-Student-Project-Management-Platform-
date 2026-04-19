@@ -18,8 +18,8 @@ const MentorApplication = () => {
         );
         const status = res.data.status;
         setApplicationStatus(status);
-        if (status != "APPROVED") {
-          navigate("mentorRegister");
+        if (status === "APPROVED") {
+          navigate("/mentorRegister");
         }
         if (status != "NOT APPLIED") {
           setNextEligibleAt(res.data.nextEligibleAt);

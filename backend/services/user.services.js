@@ -6,9 +6,6 @@ async function checkEmail(email) {
   return await userModel.findOne({ email });
 }
 
-async function checkUserById(id) {
-  return userModel.findById({id});
-}
 
 async function createUser({ email, password }) {
   const catchDuplicate = await checkEmail(email);
@@ -51,4 +48,4 @@ async function roleAddition(userId,role){
   await userModel.findByIdAndUpdate(userId,{ roles: role });
 
 }
-module.exports = { createUser, checkEmail, checkUser, checkLoggedIn,roleAddition,checkUserById };
+module.exports = { createUser, checkEmail, checkUser, checkLoggedIn,roleAddition};

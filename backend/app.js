@@ -21,6 +21,7 @@ app.use('/api/auth',github)
 app.use('/api/auth',mentorApplication)
 
 
+
 app.get('/',(_,res)=>{
     res.send("Server is running");
 });

@@ -26,6 +26,10 @@ const Navbar = () => {
       { label: "All Projects", path: "/allProject" },
       { label: "Messages", path: "/messages" },
     ],
+    admin: [
+      { label: "Home", path: "/" },
+      { label: "All Application", path: "/allApplication" },
+    ],
   };
 
   const role = data?.roles || "user";

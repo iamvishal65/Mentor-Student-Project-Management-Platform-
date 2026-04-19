@@ -14,7 +14,7 @@ async function applicationState(req, res) {
       });
     }
 
-    const userId = req.user.id;
+    const userId = req.token.id;
     const existing = await checkMentorApplication(userId);
     const todayDate = new Date();
 
@@ -58,7 +58,7 @@ async function applyForMentor(req, res) {
         message: "Already a mentor",
       });
     }
-    const userId = req.user.id;
+    const userId = req.token.id;
     const existing = await checkMentorApplication(userId);
     const todayDate = new Date();
 
@@ -67,7 +67,7 @@ async function applyForMentor(req, res) {
       if (existing.status !== "APPROVED") {
         if (todayDate >= existing.nextEligibleAt) {
           // ✅ Reapply
-          const newDate = await reapplyForMentor(todayDate, existing.id);
+          const newDate = await reapplyForMentor(todayDate, existing.userId);
           return res.status(200).json({
             message: "Application re-applied",
             status: "PENDING",

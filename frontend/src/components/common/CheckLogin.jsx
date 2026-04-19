@@ -31,7 +31,7 @@ const CheckLogin = () => {
     }
 
     loginCheck();
-  }, [setData]);
+  }, []);
 
   // 🔹 While verifying login state
   if (checking) return <p>⏳ Checking login...</p>;

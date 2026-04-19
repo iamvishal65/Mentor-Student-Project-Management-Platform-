@@ -41,8 +41,8 @@ async function reapplyForMentor(todayDate, id) {
 
 async function newApplication(id,todayDate) {
   const nextDate = new Date(todayDate);
-  nextDate.setDate(today.getDate() + 15);
-  if(id)throw Error ("No id");
+  nextDate.setDate(todayDate.getDate() + 15);
+  if(!id)throw Error ("No id");
   await MentorApplicationModel.create({
     userId:id,
     status:"PENDING",

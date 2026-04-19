@@ -55,7 +55,7 @@ async function Login(req, res) {
     if (user.error) {
       return res.status(400).json({ message: user.error, success: false });
     }
-    const token = createToken(user._id);
+    const token = createToken(user);
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -83,10 +83,7 @@ async function loginCheck(req, res) {
         .status(401)
         .json({ loggedIn: false, message: "Invalid token" });
     }
-   
-    
     const user = await checkLoggedIn(userId);
-    
     if (!user) {
       return res
         .status(401)
