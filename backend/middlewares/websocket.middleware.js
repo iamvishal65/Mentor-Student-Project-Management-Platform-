@@ -5,7 +5,13 @@ function parseCookies(cookieHeader) {
   if (!cookieHeader) return cookies;
 
   cookieHeader.split(";").forEach((cookie) => {
-    const [key, value] = cookie.trim().split("=");
+    const separatorIndex = cookie.indexOf("=");         // ✅ split only on first "="
+    if (separatorIndex === -1) return;
+
+    const key = cookie.slice(0, separatorIndex).trim();
+    const value = decodeURIComponent(                   // ✅ decode URL-encoded values
+      cookie.slice(separatorIndex + 1).trim()
+    );
     cookies[key] = value;
   });
 
@@ -16,24 +22,25 @@ function checkUser(ws, req, next) {
   try {
     const cookies = parseCookies(req.headers.cookie);
     const token = cookies.token;
+
     if (!token) {
-      ws.close();
+      ws.close(1008, "Unauthorized: No token");
       return;
     }
+
     const decoded = verifyToken(token);
     if (!decoded) {
-      ws.close();
+      ws.close(1008, "Unauthorized: Invalid token");
       return;
     }
-    // attach to ws (important)
-    ws.id = decoded.id;
+
+    ws.userId = decoded.id;
     next();
   } catch (error) {
-    ws.close();
+    console.error("checkUser error:", error.message);
+    ws.close(1008, "Unauthorized");
   }
 }
-
-function chekUserPermission(ws, req, next) {}
 
 function applyMiddleware(ws, req, middlewares, handler) {
   let i = 0;
@@ -48,4 +55,4 @@ function applyMiddleware(ws, req, middlewares, handler) {
   next();
 }
 
-module.exports = { checkUser, chekUserPermission,applyMiddleware };
+module.exports = { checkUser, applyMiddleware };

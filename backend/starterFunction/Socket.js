@@ -2,7 +2,7 @@ import { WebSocketServer } from "ws";
 import {
   addUserToOnlineUsers,
   handleDisconnect,
-  handleMessage,
+  routeMessage,
 } from "../controller/message.controller.js";
 import {
   applyMiddleware,
@@ -17,21 +17,20 @@ export default function webSocketConnection(server) {
   wss.on("connection", (ws, req) => {
     applyMiddleware(ws, req, [checkUser], () => {
       addUserToOnlineUsers(ws, onlineUsers);
+
       ws.on("message", (raw) => {
-        console.log("socket started");
         try {
-          const msg = JSON.parse(raw); 
-          if(msg.type=='MESSAGE'||msg){
-            handleMessage(ws, msg, onlineUsers);
-          }
+          const msg = JSON.parse(raw);
+          routeMessage(ws, msg, onlineUsers);
         } catch {
-          console.log("Invalid JSON");
-          return;
+          ws.send(
+            JSON.stringify({ type: "ERROR", message: "Invalid JSON format" })
+          );
         }
       });
-    });
 
-    ws.on("close", () => handleDisconnect(ws, onlineUsers));
-    ws.on("error", (err) => console.error(`[!] WS error:`, err.message));
+      ws.on("close", () => handleDisconnect(ws, onlineUsers));
+      ws.on("error", (err) => console.error(`[!] WS error:`, err.message));
+    });
   });
 }

@@ -1,7 +1,7 @@
 import React from 'react'
 import { useState } from 'react';
 
-const MentorRegisterForm = () => {
+const MentorRegisterForm = ({onSubmit,loading}) => {
   const [formData, setFormData] = useState({
      firstName: "",
      lastName: "",
@@ -64,7 +64,7 @@ const MentorRegisterForm = () => {
                Designation
              </label>
              <input
-               type="number"
+               type="text"
                name="designation"
                value={formData.designation}
                onChange={handleChange}
@@ -75,8 +75,10 @@ const MentorRegisterForm = () => {
  
            <button
              type="submit"
+             disabled={loading}
              className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
            >
+            {loading ? "Registering..." : "Register as Mentor"}
              Register as Mentor
            </button>
  

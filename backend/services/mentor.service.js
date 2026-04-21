@@ -19,7 +19,8 @@ async function createMentor({
   const newMentor = await mentorModel.create({
     firstName,
     lastName,
-    designation
+    designation,
+    userId
   });
   return newMentor;
 }
@@ -53,4 +54,4 @@ async function newApplication(id,todayDate) {
 }
 
 
-module.exports={createMentor,checkMentor,checkMentorApplication,reapplyForMentor,newApplication}
+module.exports={createMentor,checkMentorApplication,reapplyForMentor,newApplication}

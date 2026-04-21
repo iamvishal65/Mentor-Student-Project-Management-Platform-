@@ -1,23 +1,26 @@
-import React from 'react'
-import MentorRegisterForm from './MentorRegisterForm';
-import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../../../api/authApi';
-
+import React from "react";
+import MentorRegisterForm from "./MentorRegisterForm";
+import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../../api/authApi";
+import { useState } from "react";
 
 const MentorRegister = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
   async function handleSubmit(data) {
     try {
-      const res = await axiosInstance.post("/api/auth/mentor/register", data);
-      if (res.status != 201) throw new Error(res.data.message);
+      setLoading(true);
+      await axiosInstance.post("/api/auth/mentor/register", data);
       navigate("/");
     } catch (error) {
       console.log(error);
-      
+    } finally {
+      setLoading(false);
     }
   }
 
-  return <MentorRegisterForm onSubmit={handleSubmit} />;
-}
+  return <MentorRegisterForm onSubmit={handleSubmit} loading={loading} />;
+};
 
-export default MentorRegister
+export default MentorRegister;

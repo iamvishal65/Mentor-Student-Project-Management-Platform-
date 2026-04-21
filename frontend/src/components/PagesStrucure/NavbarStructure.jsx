@@ -1,47 +1,66 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosInstance from "../../api/authApi";
 import { userData } from "../../recoil/UserData";
 import { useRecoilState } from "recoil";
+
+const navLinks = {
+  user: [
+    { label: "Home", path: "/" },
+    { label: "All Projects", path: "/allProject" },
+  ],
+  student: [
+    { label: "Home", path: "/" },
+    { label: "My Projects", path: "/myProject" },
+    { label: "All Projects", path: "/allProject" },
+    { label: "Ask Mentor", path: "/chatPage" },
+  ],
+  mentor: [
+    { label: "Home", path: "/" },
+    { label: "All Projects", path: "/allProject" },
+    { label: "Messages", path: "/messages" },
+  ],
+  admin: [
+    { label: "Home", path: "/" },
+    { label: "All Application", path: "/allApplication" },
+  ],
+};
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [data, setData] = useRecoilState(userData);
   const navigate = useNavigate();
-
-  const navLinks = {
-    user: [
-      { label: "Home", path: "/" },
-      { label: "All Projects", path: "/allProject" },
-    ],
-    STUDENT: [
-      { label: "Home", path: "/" },
-      { label: "My Projects", path: "/myProject" },
-      { label: "All Projects", path: "/allProject" },
-      { label: "Ask Mentor", path: "/chatPage" },
-    ],
-    MENTOR: [
-      { label: "Home", path: "/" },
-      { label: "All Projects", path: "/allProject" },
-      { label: "Messages", path: "/messages" },
-    ],
-    admin: [
-      { label: "Home", path: "/" },
-      { label: "All Application", path: "/allApplication" },
-    ],
-  };
+  const profileRef = useRef(null);
 
   const role = data?.roles || "user";
-  const t = navLinks[role] || [];
+  const links = navLinks[role] || [];
+
+  // ✅ Close profile dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   async function handleLogout() {
     try {
       const res = await axiosInstance.post("/api/auth/user/logout");
-      if (res.status != 200) throw new Error(" error in logout");
+      if (res.status !== 200) throw new Error("Error in logout");   // ✅ strict !==
+      setData(null);                                                 // ✅ clear Recoil state
       navigate("/register");
     } catch (error) {
-      console.error("Error:", error.res?.data || error.message);
+      console.error("Error:", error.response?.data || error.message); // ✅ error.response
     }
+  }
+
+  // ✅ Close mobile menu after navigation
+  function handleMobileLinkClick() {
+    setMenuOpen(false);
   }
 
   return (
@@ -59,42 +78,51 @@ const Navbar = () => {
       {/* Desktop Menu */}
       <div className="hidden md:flex items-center space-x-8 text-gray-100 font-medium">
         <ul className="flex space-x-8">
-          {t.map((item, index) => (
-            <li key={index}>
+          {links.map((item) => (
+            <li key={item.path}>
               <Link to={item.path}>{item.label}</Link>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* Right side buttons */}
+      {/* Right side */}
       <div className="flex items-center space-x-4">
-        {/* Profile Pic (Desktop) */}
-        <div className="relative hidden md:block">
+        {/* Profile (Desktop) */}
+        <div className="relative hidden md:block" ref={profileRef}>
           <img
-            src="https://i.pravatar.cc/50"
+            src={data?.avatar || "https://i.pravatar.cc/50"}  // ✅ use real avatar
             alt="profile"
             className="w-10 h-10 rounded-full border-2 border-white cursor-pointer"
-            onClick={() => setProfileOpen(!profileOpen)}
+            onClick={() => setProfileOpen((prev) => !prev)}
           />
 
           {profileOpen && (
-            <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-md py-2 text-gray-700 font-medium z-50">
-              <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100">
+            <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-md py-2 text-gray-700 font-medium z-50">
+              <Link
+                to="/profile"
+                className="block px-4 py-2 hover:bg-gray-100"
+                onClick={() => setProfileOpen(false)}
+              >
                 Profile
               </Link>
               <Link
                 to="/settings"
                 className="block px-4 py-2 hover:bg-gray-100"
+                onClick={() => setProfileOpen(false)}
               >
                 Settings
               </Link>
-              <Link
-                to="/mentorApplication"
-                className="block px-4 py-2 hover:bg-gray-100"
-              >
-                Apply for Mentor
-              </Link>
+              {/* ✅ Only show for roles that can apply */}
+              {role === "user" || role === "student" ? (
+                <Link
+                  to="/mentorApplication"
+                  className="block px-4 py-2 hover:bg-gray-100"
+                  onClick={() => setProfileOpen(false)}
+                >
+                  Apply for Mentor
+                </Link>
+              ) : null}
               <button
                 className="block w-full text-left px-4 py-2 hover:bg-gray-100"
                 onClick={handleLogout}
@@ -108,90 +136,59 @@ const Navbar = () => {
         {/* Mobile Menu Button */}
         <button
           className="md:hidden text-white focus:outline-none"
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() => setMenuOpen((prev) => !prev)}
         >
           {menuOpen ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-7 w-7"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-7 w-7"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           )}
         </button>
       </div>
 
-      {/* Mobile Dropdown Menu */}
+      {/* Mobile Dropdown — ✅ now role-aware */}
       {menuOpen && (
-        <div
-          className="absolute top-16 left-0 right-0 
-                     bg-gradient-to-b from-blue-700 to-purple-700 
-                     shadow-md md:hidden z-20"
-        >
+        <div className="absolute top-16 left-0 right-0 bg-gradient-to-b from-blue-700 to-purple-700 shadow-md md:hidden z-20">
           <div className="flex flex-col space-y-3 px-6 py-4 text-white font-medium">
-            <Link to="/" className="mobile-link">
-              Home
-            </Link>
-            <Link to="/myProject" className="mobile-link">
-              My Projects
-            </Link>
-            <Link to="#" className="mobile-link">
-              Group Projects
-            </Link>
-            <Link to="/allProject" className="mobile-link">
-              All Projects
-            </Link>
-            <Link to="#" className="mobile-link">
-              Ask Mentor?
-            </Link>
+            {links.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className="mobile-link"
+                onClick={handleMobileLinkClick}   // ✅ closes menu on navigate
+              >
+                {item.label}
+              </Link>
+            ))}
 
-            {/* Profile section for mobile */}
             <hr className="border-gray-500" />
 
             <div className="flex items-center space-x-3 mt-2">
               <img
-                src="https://i.pravatar.cc/50"
+                src={data?.avatar || "https://i.pravatar.cc/50"}  // ✅ real avatar
                 alt="profile"
                 className="w-10 h-10 rounded-full border-2 border-white"
               />
-              <span className="text-white font-semibold">Your Name</span>
+              <span className="text-white font-semibold">
+                {data?.name || "Your Name"}                        // ✅ real name
+              </span>
             </div>
 
-            <Link to="/profile" className="mobile-link mt-1">
+            <Link to="/profile" className="mobile-link mt-1" onClick={handleMobileLinkClick}>
               Profile
             </Link>
-            <Link to="/settings" className="mobile-link">
+            <Link to="/settings" className="mobile-link" onClick={handleMobileLinkClick}>
               Settings
             </Link>
-            <Link
-              to="/mentorApplication"
-              className="block px-4 py-2 hover:bg-gray-100"
-            >
-              Apply for Mentor
-            </Link>
+            {(role === "user" || role === "student") && (
+              <Link to="/mentorApplication" className="mobile-link" onClick={handleMobileLinkClick}>
+                Apply for Mentor
+              </Link>
+            )}
             <button className="text-left mobile-link" onClick={handleLogout}>
               Logout
             </button>

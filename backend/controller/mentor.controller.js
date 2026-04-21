@@ -1,9 +1,10 @@
 const {
-  checkMentor,
   checkMentorApplication,
   newApplication,
   reapplyForMentor,
+  createMentor,
 } = require("../services/mentor.service");
+const { roleAddition } = require("../services/user.services");
 const { mentorregisterSchema } = require("../validators/mentor.validator");
 async function applicationState(req, res) {
   try {
@@ -36,10 +37,15 @@ async function applicationState(req, res) {
           nextEligibleAt: todayDate,
         });
       }
+      return res.status(200).json({
+        message: "User already applied",
+        status: existing.status,
+        nextEligibleAt: existing.nextEligibleAt,
+      });
     }
     return res.status(200).json({
       message: "User not applied",
-      status:"NOT APPLIED"
+      status: "NOT APPLIED",
     });
   } catch (error) {
     console.error("error is:", error);
@@ -76,9 +82,9 @@ async function applyForMentor(req, res) {
         }
       }
       return res.status(200).json({
-            message: "Application approved",
-            status: "APPROVED",
-          });
+        message: "Application approved",
+        status: "APPROVED",
+      });
     }
 
     // ✅ First-time application
@@ -113,11 +119,9 @@ async function newMentor(req, res) {
     }
     const data = validateUser.data;
     const userId = req.token.id;
-    const newMentor = checkMentor(data, userId);
-    if (newMentor.error) {
-      return res.status(400).json({ message: error.message, success: false });
-    }
-
+    
+    await createMentor(data,userId);
+    await roleAddition(userId,"mentor")
     res.status(201).json({
       success: true,
       message: "mentor registered successfully",
