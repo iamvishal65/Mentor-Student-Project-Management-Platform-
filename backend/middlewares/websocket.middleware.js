@@ -5,13 +5,11 @@ function parseCookies(cookieHeader) {
   if (!cookieHeader) return cookies;
 
   cookieHeader.split(";").forEach((cookie) => {
-    const separatorIndex = cookie.indexOf("=");         // ✅ split only on first "="
+    const separatorIndex = cookie.indexOf("=");
     if (separatorIndex === -1) return;
 
     const key = cookie.slice(0, separatorIndex).trim();
-    const value = decodeURIComponent(                   // ✅ decode URL-encoded values
-      cookie.slice(separatorIndex + 1).trim()
-    );
+    const value = decodeURIComponent(cookie.slice(separatorIndex + 1).trim());
     cookies[key] = value;
   });
 
@@ -35,6 +33,7 @@ function checkUser(ws, req, next) {
     }
 
     ws.userId = decoded.id;
+    ws.roles = decoded.roles || [];
     next();
   } catch (error) {
     console.error("checkUser error:", error.message);
@@ -42,8 +41,30 @@ function checkUser(ws, req, next) {
   }
 }
 
+function checkRole(ws, req, next) {
+  try {
+    const roles = ws.roles;
+
+    if (!roles || !Array.isArray(roles)) {
+      ws.close(1008, "Unauthorized: No roles found");
+      return;
+    }
+
+    if (!roles.includes("student") && !roles.includes("mentor")) {
+      ws.close(1008, "Forbidden: user not authorized for chat");
+      return;
+    }
+
+    next();
+  } catch (error) {
+    console.error("checkRole error:", error.message);
+    ws.close(1008, "Unauthorized");
+  }
+}
+
 function applyMiddleware(ws, req, middlewares, handler) {
   let i = 0;
+
   function next() {
     if (i < middlewares.length) {
       const mw = middlewares[i++];
@@ -52,7 +73,8 @@ function applyMiddleware(ws, req, middlewares, handler) {
       handler();
     }
   }
+
   next();
 }
 
-module.exports = { checkUser, applyMiddleware };
+module.exports = { checkUser, checkRole, applyMiddleware };

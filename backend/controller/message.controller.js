@@ -2,28 +2,9 @@ const {
   saveMessage,
   getReceiver,
   handleSend,
-  markMessageAsRead,
+  validateMessage,
+  validateReceiver,
 } = require("../services/message.service");
-const { sendMessageSchema } = require("../validators/message.validator");
-
-function validateMessage(msg) {
-  const result = sendMessageSchema.safeParse(msg);
-
-  if (!result.success) {
-    return {
-      success: false,
-      errors: result.error.issues.map((err) => ({
-        field: err.path[0],
-        message: err.message,
-      })),
-    };
-  }
-
-  return {
-    success: true,
-    data: result.data,
-  };
-}
 
 function addUserToOnlineUsers(ws, onlineUsers) {
   const userId = ws.userId;
@@ -35,6 +16,102 @@ function addUserToOnlineUsers(ws, onlineUsers) {
     onlineUsers.set(userId, new Set());
   }
   onlineUsers.get(userId).add(ws);
+}
+
+async function routeMessage(ws, msg, onlineUsers) {
+  if (!msg || typeof msg.type !== "string") {
+    ws.send(
+      JSON.stringify({
+        type: "ERROR",
+        message: "Invalid message format",
+      })
+    );
+    return;
+  }
+
+  const receiverValidation = await validateReceiver(msg.receiverId);
+
+  if (!receiverValidation.success) {
+    ws.send(
+      JSON.stringify({
+        type: "ERROR",
+        message: receiverValidation.error,
+      })
+    );
+    return;
+  }
+
+  switch (msg.type) {
+    case "MESSAGE": {
+      const result = validateMessage(msg);
+
+      if (!result.success) {
+        ws.send(
+          JSON.stringify({
+            type: "ERROR",
+            errors: result.errors,
+          })
+        );
+        return;
+      }
+
+      handleMessage(ws, result.data, onlineUsers);
+      break;
+    }
+
+    case "STATUS": {
+      if (!msg.messageId) {
+        ws.send(
+          JSON.stringify({
+            type: "ERROR",
+            message: "messageId is required for status",
+          })
+        );
+        return;
+      }
+
+      handleStatus(ws, msg, onlineUsers);
+      break;
+    }
+
+    case "TYPING": {
+      if (!msg.messageId) {
+        ws.send(
+          JSON.stringify({
+            type: "ERROR",
+            message: "messageId is required for typing",
+          })
+        );
+        return;
+      }
+
+      handleTyping(ws, msg, onlineUsers);
+      break;
+    }
+
+    case "NOTIFICATION": {
+      if (!msg.messageId) {
+        ws.send(
+          JSON.stringify({
+            type: "ERROR",
+            message: "messageId is required for notification",
+          })
+        );
+        return;
+      }
+
+      handleNotification(ws, msg, onlineUsers);
+      break;
+    }
+
+    default:
+      ws.send(
+        JSON.stringify({
+          type: "ERROR",
+          message: `Unknown message type: ${msg.type}`,
+        })
+      );
+  }
 }
 
 async function handleMessage(ws, msg, onlineUsers) {
@@ -52,36 +129,21 @@ async function handleMessage(ws, msg, onlineUsers) {
   }
 }
 
-function handleTyping(ws, msg, onlineUsers) {
+async function handleStatus(ws, msg, onlineUsers) {
   try {
+    await changeMessageStatus(msg.messageId, ws.userId);
     const receiver = getReceiver(msg, onlineUsers);
     if (!receiver) return;
 
     handleSend(receiver, {
-      type: "TYPING",
-      senderId: ws.userId,
-    });
-  } catch (error) {
-    console.error("handleTyping error:", error);
-  }
-}
-
-async function handleRead(ws, msg, onlineUsers) {
-  try {
-    await markMessageAsRead(msg.messageId, ws.userId);
-
-    const receiver = getReceiver(msg, onlineUsers);
-    if (!receiver) return;
-
-    handleSend(receiver, {
-      type: "READ",
+      type: status,
       messageId: msg.messageId,
       readBy: ws.userId,
     });
   } catch (error) {
-    console.error("handleRead error:", error);
+    console.error("handleStatus error:", error);
     ws.send(
-      JSON.stringify({ type: "ERROR", message: "Failed to mark as read" })
+      JSON.stringify({ type: "ERROR", message: "Failed to update status" })
     );
   }
 }
@@ -99,73 +161,45 @@ function handleDisconnect(ws, onlineUsers) {
   }
 }
 
-function routeMessage(ws, msg, onlineUsers) {
-  if (!msg || typeof msg.type !== "string") {
+async function handleTyping(ws, msg, onlineUsers){
+  try {
+    const receiver = getReceiver(msg, onlineUsers);
+    if (!receiver) return;
+
+    handleSend(receiver, {
+      type: "TYPING",
+      messageId: msg.messageId,
+      readBy: ws.userId,
+    });
+  } catch (error) {
+    console.error("handleTyping error:", error);
     ws.send(
-      JSON.stringify({
-        type: "ERROR",
-        message: "Invalid message format",
-      })
+      JSON.stringify({ type: "ERROR", message: "Failed to send typing" })
     );
-    return;
-  }
-
-  switch (msg.type) {
-    case "MESSAGE": {
-      const result = validateMessage(msg);
-      if (!result.success) {
-        ws.send(
-          JSON.stringify({
-            type: "ERROR",
-            errors: result.errors,
-          })
-        );
-        return;
-      }
-      handleMessage(ws, result.data, onlineUsers);
-      break;
-    }
-
-    case "TYPING": {
-      if (!msg.receiverId) {
-        ws.send(
-          JSON.stringify({
-            type: "ERROR",
-            message: "receiverId is required for TYPING",
-          })
-        );
-        return;
-      }
-      handleTyping(ws, msg, onlineUsers);
-      break;
-    }
-
-    case "READ": {
-      if (!msg.messageId) {
-        ws.send(
-          JSON.stringify({
-            type: "ERROR",
-            message: "messageId is required for READ",
-          })
-        );
-        return;
-      }
-      handleRead(ws, msg, onlineUsers);
-      break;
-    }
-
-    default:
-      ws.send(
-        JSON.stringify({
-          type: "ERROR",
-          message: `Unknown message type: ${msg.type}`,
-        })
-      );
   }
 }
 
+function notification(){}
+
+async function recentChats(req,res){
+  try {
+    const recentMessages = getRecentMessages(msg, onlineUsers);
+    if (!receiver) return;
+  } catch (error) {
+    
+  }
+}
+
+async function allMentor(req,res){
+  try {
+    const checkReciever=h
+  } catch (error) {
+    
+  }
+}
+function allStundet(req,res){}
 module.exports = {
   handleDisconnect,
   addUserToOnlineUsers,
   routeMessage,
-};
+}; 

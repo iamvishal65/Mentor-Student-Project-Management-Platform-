@@ -6,6 +6,7 @@ import Login from "../pages/Auth/Login/Login";
 import CheckLogin from "../components/common/CheckLogin";
 import AppLayout from "../components/AppLayout/AppLayout";
 
+
 // 🔹 Lazy imports
 const Home = lazy(() => import("../pages/Home/Home"));
 const MyProject = lazy(() => import("../pages/project/myproject/MyProject"));
@@ -15,11 +16,10 @@ const StudentRegister = lazy(() => import("../pages/role/student/StudentRegister
 const AllProject = lazy(() => import("../pages/project/allProject/AllProject"));
 const Setting = lazy(() => import("../pages/userMenu/setting/Setting"));
 const UserData = lazy(() => import("../pages/userMenu/profile/UserData"));
-const ChatPage = lazy(() => import("../pages/Chat/ChatPage"));
 const MentorRegister = lazy(() => import("../pages/role/mentor/MentorRegister"));
 const MentorApplication = lazy(() => import("../pages/userMenu/mentorApplication/MentorApplication"));
 const AllApplicaton = lazy(() => import("../pages/allMentorApplication/AllApplicaton"));
-
+const MessagePage=lazy(()=>import ( "../pages/message/messagePage/MessagePage"));
 const LinkRoutes = () => {
   return (
     <Router>
@@ -36,10 +36,10 @@ const LinkRoutes = () => {
               <Route path="/studentRegister" element={<StudentRegister />} />
               <Route path="/settings" element={<Setting />} />
               <Route path="/profile" element={<UserData />} />
-              <Route path="/chatPage" element={<ChatPage />} />
               <Route path="/mentorRegister" element={<MentorRegister />} />
               <Route path="/mentorApplication" element={<MentorApplication />} />
               <Route path="/allApplication" element={<AllApplicaton />} />
+              <Route path="/messagePage" element={<MessagePage />} />
             </Route>
           </Route>
 

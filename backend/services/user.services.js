@@ -6,7 +6,6 @@ async function checkEmail(email) {
   return await userModel.findOne({ email });
 }
 
-
 async function createUser({ email, password }) {
   const catchDuplicate = await checkEmail(email);
   if (catchDuplicate) {

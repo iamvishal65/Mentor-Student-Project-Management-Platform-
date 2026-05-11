@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 const messageSchema = new mongoose.Schema(
   {
     senderId: {
@@ -20,18 +21,27 @@ const messageSchema = new mongoose.Schema(
 
     messageType: {
       type: String,
-      enum: ["text", "image", "file","typing","read"],
+      enum: ["text", "image", "file"],
       default: "text"
     },
 
-    isRead: {
+    status: {
+      type: String,
+      enum: ["sent", "delivered", "read"],
+      default: "sent"
+    },
+
+    deletedForEveryone: {
       type: Boolean,
       default: false
-    }
+    },
 
+    deletedForMeBy: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "userData"
+    }]
   },
   { timestamps: true }
 );
 
-const messageModel= mongoose.model("Message", messageSchema);
-module.exports=messageModel;
+module.exports = mongoose.model("Message", messageSchema);

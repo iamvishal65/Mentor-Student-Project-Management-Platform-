@@ -1,5 +1,7 @@
 const messageModel = require("../models/Message.model.cjs");
+const userModel = require("../models/User.model");
 const conversationModel = require("../models/conversation.model");
+const { sendMessageSchema } = require("../validators/message.validator");
 
 function handleSend(ws, msg) {
   ws.send(
@@ -40,10 +42,39 @@ async function saveMessage(msg, id) {
     message: message,
   });
 }
-function getReciver(msg, onlineUsers) {
-  return onlineUsers.has(msg.id);
-}
+async function validateReceiver(id) {
+  try {
+    const registered = await userModel.findOne({
+      _id: id,
+      roles: {
+        $in: ["student", "mentor", "admin"]
+      }
+    });
 
+    if (!registered) {
+      return {
+        success: false,
+        error: "INVALID_RECEIVER"
+      };
+    }
+
+    return {
+      success: true,
+      data: registered
+    };
+
+  } catch (error) {
+    console.error(error);
+
+    return {
+      success: false,
+      error: "DATABASE_ERROR"
+    };
+  }
+}
+async function getReciver(msg, onlineUsers) {
+    return onlineUsers.has(msg.id);
+}
 function sendError(ws, message, code = "ERROR") {
   ws.send(
     JSON.stringify({
@@ -53,5 +84,25 @@ function sendError(ws, message, code = "ERROR") {
     }),
   );
 }
+function validateMessage(msg) {
+  const result = sendMessageSchema.safeParse(msg);
 
-module.exports = { handleSend, saveMessage, getReciver ,sendError};
+  if (!result.success) {
+    return {
+      success: false,
+      errors: result.error.issues.map((err) => ({
+        field: err.path[0],
+        message: err.message,
+      })),
+    };
+  }
+
+  return {
+    success: true,
+    data: result.data,
+  };
+}
+function createConversation(){}
+function changeMessageStatus(ws,status){}
+function lastConversationMessages(){}
+module.exports = { handleSend, saveMessage, getReciver ,sendError,validateMessage,validateReceiver};

@@ -6,6 +6,7 @@ import {
 } from "../controller/message.controller.js";
 import {
   applyMiddleware,
+  checkRole,
   checkUser,
 } from "../middlewares/websocket.middleware.js";
 
@@ -15,9 +16,8 @@ export default function webSocketConnection(server) {
   const wss = new WebSocketServer({ server });
 
   wss.on("connection", (ws, req) => {
-    applyMiddleware(ws, req, [checkUser], () => {
+    applyMiddleware(ws, req, [checkUser,checkRole], () => {
       addUserToOnlineUsers(ws, onlineUsers);
-
       ws.on("message", (raw) => {
         try {
           const msg = JSON.parse(raw);

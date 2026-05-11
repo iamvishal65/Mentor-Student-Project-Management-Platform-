@@ -13,12 +13,12 @@ const navLinks = {
     { label: "Home", path: "/" },
     { label: "My Projects", path: "/myProject" },
     { label: "All Projects", path: "/allProject" },
-    { label: "Ask Mentor", path: "/chatPage" },
+    { label: "Messages", path: "/messagePage" },
   ],
   mentor: [
     { label: "Home", path: "/" },
     { label: "All Projects", path: "/allProject" },
-    { label: "Messages", path: "/messages" },
+    { label: "Messages", path: "/messagePage" },
   ],
   admin: [
     { label: "Home", path: "/" },
@@ -33,7 +33,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const profileRef = useRef(null);
 
-  const role = data?.roles || "user";
+  const role = data?.roles?.[0]?.toLowerCase() || "user";
   const links = navLinks[role] || [];
 
   // ✅ Close profile dropdown on outside click
@@ -72,7 +72,7 @@ const Navbar = () => {
     >
       {/* Logo */}
       <div className="text-white text-2xl font-bold select-none">
-        CollabForge
+        ProjectHub
       </div>
 
       {/* Desktop Menu */}
