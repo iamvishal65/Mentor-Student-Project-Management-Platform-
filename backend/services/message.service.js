@@ -102,7 +102,10 @@ function validateMessage(msg) {
     data: result.data,
   };
 }
+
 function createConversation(){}
+
+
 function changeMessageStatus(ws,status){}
 function lastConversationMessages(){}
 module.exports = { handleSend, saveMessage, getReciver ,sendError,validateMessage,validateReceiver};

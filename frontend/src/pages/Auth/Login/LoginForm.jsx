@@ -25,7 +25,11 @@ export default function LoginForm({ onSubmit, loading }) {
           <span className="mb-1 text-gray-700">Email:</span>
           <input
             type="email"
+
             placeholder="Enter your email or enrollment no."
+
+            placeholder="Enter your email "
+
             className="border rounded-md border-gray-400 p-2 w-full focus:border-blue-500 focus:outline-none"
             {...register("email", {
               required: "Email  is required",

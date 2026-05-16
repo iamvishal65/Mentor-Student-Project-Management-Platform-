@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import MessagePageStructure from "./MessagePageStructure";
 
 const WS_URL = "ws://localhost:8080";
@@ -17,14 +11,9 @@ const MessagePage = () => {
   // ==============================
 
   const [messages, setMessages] = useState([]);
-
   const [input, setInput] = useState("");
-
-  const [connectionStatus, setConnectionStatus] =
-    useState("connecting");
-
-  const [selectedChat, setSelectedChat] =
-    useState(null);
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const [selectedChat, setSelectedChat] = useState(null);
 
   // ==============================
   // CONNECT WS
@@ -32,8 +21,11 @@ const MessagePage = () => {
 
   const connectWS = useCallback(() => {
     const ws = new WebSocket(WS_URL);
-
     wsRef.current = ws;
+
+    let pingInterval;
+    let attempt = 0;
+    const maxReconnectionAttempt = 10;
 
     // ------------------------------
     // OPEN
@@ -41,6 +33,11 @@ const MessagePage = () => {
 
     ws.onopen = () => {
       console.log("Connected");
+      pingInterval = setInterval(() => {
+        if (wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: "ping" }));
+        }
+      }, 3000);
       setConnectionStatus("connected");
     };
 
@@ -51,21 +48,14 @@ const MessagePage = () => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-
         console.log("Incoming:", data);
-
         switch (data.type) {
           case "NEW_MESSAGE":
-            setMessages((prev) => [
-              ...prev,
-              data.payload,
-            ]);
+            setMessages((prev) => [...prev, data.payload]);
             break;
-
           case "CHAT_HISTORY":
             setMessages(data.payload);
             break;
-
           default:
             console.log("Unknown event");
         }
@@ -88,16 +78,32 @@ const MessagePage = () => {
     // ------------------------------
 
     ws.onclose = () => {
-      console.log("Disconnected");
-
+      clearInterval(pingInterval);
       setConnectionStatus("disconnected");
 
-      // Auto reconnect
-      setTimeout(() => {
-        connectWS();
-      }, 3000);
+      const reconnecting = () => {
+        if (attempt >= maxReconnectionAttempt) {
+          console.error("Max reconnection attempts reached.");
+          return;
+        }
+        const delay = getBackoffDelay(attempt);
+        console.log(`Reconnecting in ${delay}ms`);
+        setTimeout(() => {
+          attempt++;
+          connectWS();
+        }, delay);
+      };
+
+      reconnecting();
     };
   }, []);
+
+  const getBackoffDelay = (attempt) => {
+    const base = 500; // 0.5 second
+    const max = 30000; // 30 seconds
+    const jitter = Math.random() * 1000;
+    return Math.min(base * 2 ** attempt + jitter, max);
+  };
 
   // ==============================
   // INITIAL CONNECT
@@ -105,7 +111,6 @@ const MessagePage = () => {
 
   useEffect(() => {
     connectWS();
-
     return () => {
       wsRef.current?.close();
     };
@@ -117,18 +122,12 @@ const MessagePage = () => {
 
   const sendMessage = () => {
     if (!input.trim()) return;
-
-    if (
-      !wsRef.current ||
-      wsRef.current.readyState !== WebSocket.OPEN
-    ) {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       console.log("Socket not connected");
       return;
     }
-
     const messageData = {
       type: "SEND_MESSAGE",
-
       payload: {
         chatId: selectedChat,
         content: input,
@@ -136,9 +135,7 @@ const MessagePage = () => {
       },
     };
 
-    wsRef.current.send(
-      JSON.stringify(messageData)
-    );
+    wsRef.current.send(JSON.stringify(messageData));
 
     // optimistic update
     setMessages((prev) => [
@@ -158,11 +155,7 @@ const MessagePage = () => {
 
   const openChat = (chatId) => {
     setSelectedChat(chatId);
-
-    if (
-      wsRef.current &&
-      wsRef.current.readyState === WebSocket.OPEN
-    ) {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(
         JSON.stringify({
           type: "GET_CHAT_HISTORY",
@@ -184,5 +177,7 @@ const MessagePage = () => {
     />
   );
 };
+
+export default MessagePage;
 
 export default MessagePage;

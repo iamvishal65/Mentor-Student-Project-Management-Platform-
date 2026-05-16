@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 
 const messagesData = [
@@ -121,3 +122,138 @@ export default function MessagePageStructure() {
     </div>
   );
 }
+
+import React, { useState } from "react";
+
+export default function MessagePageStructure({
+  users = [],
+  selectedUser,
+  setSelectedUser,
+  messages = [],
+  input,
+  setInput,
+  sendMessage,
+  setActiveTab,
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  return (
+    <div className="h-screen flex flex-col">
+      {/* TOP BAR */}
+      <div className="flex items-center justify-between border-b p-3">
+        <h1 className="font-bold text-lg">Chats</h1>
+
+        {/* MENU */}
+        <div className="relative">
+          <button onClick={() => setMenuOpen(!menuOpen)} className="text-2xl">
+            ☰
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 top-10 w-40 border rounded bg-white shadow">
+              <div
+                onClick={() => {
+                  setActiveTab("recent");
+                  setMenuOpen(false);
+                }}
+                className="p-2 hover:bg-gray-100 cursor-pointer"
+              >
+                Recent Chats
+              </div>
+
+              <div
+                onClick={() => {
+                  setActiveTab("mentor");
+                  setMenuOpen(false);
+                }}
+                className="p-2 hover:bg-gray-100 cursor-pointer"
+              >
+                All Mentors
+              </div>
+
+              <div
+                onClick={() => {
+                  setActiveTab("student");
+                  setMenuOpen(false);
+                }}
+                className="p-2 hover:bg-gray-100 cursor-pointer"
+              >
+                All Students
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* USER LIST */}
+      {!selectedUser && (
+        <div className="flex-1 p-3 space-y-2 overflow-y-auto">
+          {users.length === 0 ? (
+            <div className="text-gray-500">No chat till now</div>
+          ) : (
+            users.map((user) => (
+              <div
+                key={user._id || user.id}
+                onClick={() => setSelectedUser(user)}
+                className="p-3 border rounded cursor-pointer hover:bg-gray-100"
+              >
+                {user.name}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* CHAT SCREEN */}
+      {selectedUser && (
+        <div className="flex-1 flex flex-col">
+          {/* USER NAME */}
+          <div className="border-b p-3 font-semibold flex items-center gap-3">
+            <button onClick={() => setSelectedUser(null)} className="text-xl">
+              ←
+            </button>
+
+            {selectedUser.name}
+          </div>
+
+          {/* MESSAGES */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {messages.length === 0 ? (
+              <div className="text-gray-500">No messages</div>
+            ) : (
+              messages.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`max-w-[300px] p-2 rounded ${
+                    msg.self ? "bg-black text-white ml-auto" : "bg-gray-200"
+                  }`}
+                >
+                  {msg.content}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* INPUT */}
+          <div className="border-t p-3 flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type message..."
+              className="flex-1 border rounded px-3 py-2"
+            />
+
+            <button
+              onClick={sendMessage}
+              className="bg-black text-white px-4 rounded"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
