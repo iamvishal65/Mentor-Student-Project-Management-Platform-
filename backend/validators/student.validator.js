@@ -1,17 +1,6 @@
 const { z } = require("zod");
 
 const studentSchema = z.object({
-  firstName: z
-    .string()
-    .regex(/^[a-zA-Z]+$/)
-    .max(50)
-    .describe("invalid text"),
-  lastName: z
-    .string()
-    .regex(/^[a-zA-Z]+$/)
-    .max(50)
-    .describe("invalid text"),
-  
   enrollment_number: z
     .string()
     .regex(/^[A-Z]{3}[0-9]{8}$/, "invalid enrollment number format")

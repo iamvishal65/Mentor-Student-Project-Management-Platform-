@@ -179,7 +179,7 @@ async function handleTyping(ws, msg, onlineUsers){
   }
 }
 
-<<<<<<< HEAD
+
 function notification(){}
 
 async function recentChats(req,res){
@@ -199,7 +199,7 @@ async function allMentor(req,res){
   }
 }
 function allStundet(req,res){}
-=======
+
 async function recentChats(req, res) {
   try {
     const userId = req.user.id;
@@ -329,15 +329,14 @@ async function allStundet(req, res) {
 
 function notification(){}
 
->>>>>>> 847a40a (Initial commit)
+
 module.exports = {
   handleDisconnect,
   addUserToOnlineUsers,
   routeMessage,
-<<<<<<< HEAD
-=======
+
   allStundet,
   allMentor,
   recentChats
->>>>>>> 847a40a (Initial commit)
+
 }; 

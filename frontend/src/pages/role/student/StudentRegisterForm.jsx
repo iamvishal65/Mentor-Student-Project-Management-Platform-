@@ -1,24 +1,23 @@
 import React, { useState } from "react";
 
-const StudentRegisterForm = ({ onSubmit }) => {
+const StudentRegisterForm = ({ onSubmit, loading }) => {
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
     enrollment_number: "",
     admissionYear: "",
   });
 
   function handleChange(e) {
     const { name, value } = e.target;
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   }
 
   function handleSubmit(e) {
     e.preventDefault();
-    onSubmit(formData); 
+    onSubmit(formData);
   }
 
   return (
@@ -32,36 +31,9 @@ const StudentRegisterForm = ({ onSubmit }) => {
 
           <div>
             <label className="block text-sm font-medium mb-1">
-              First Name
-            </label>
-            <input
-              type="text"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Last Name
-            </label>
-            <input
-              type="text"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">
               Enrollment Number
             </label>
+
             <input
               type="text"
               name="enrollment_number"
@@ -76,6 +48,7 @@ const StudentRegisterForm = ({ onSubmit }) => {
             <label className="block text-sm font-medium mb-1">
               Admission Year
             </label>
+
             <input
               type="number"
               name="admissionYear"
@@ -88,9 +61,10 @@ const StudentRegisterForm = ({ onSubmit }) => {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
           >
-            Register as Student
+            {loading ? "Registering..." : "Register as Student"}
           </button>
 
         </form>

@@ -6,14 +6,6 @@ const studentSchema = new mongoose.Schema({
     ref: "userData",
     required: true,
   },
-  firstName: {
-    type: String,
-    required: true,
-  },
-  lastName: {
-    type: String,
-    required: true,
-  },
   enrollment_number: {
     type: String,
     required: true,

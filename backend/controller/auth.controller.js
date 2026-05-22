@@ -1,9 +1,11 @@
+const { createNewProfile } = require("../services/profile.services");
 const {
   createUser,
   checkUser,
   checkLoggedIn,
 } = require("../services/user.services");
 const { createToken } = require("../utils/token.util");
+const loginSchema = require("../validators/loginSchema");
 
 
 const userSchema = require("../validators/userSchema");
@@ -23,6 +25,7 @@ async function Register(req, res) {
     }
     const data = validateUser.data;
     const user = await createUser(data);
+    await createNewProfile(data,user._id);
     if (user.error) {
       return res.status(400).json({ message: user.error, success: false });
     }
@@ -38,7 +41,7 @@ async function Register(req, res) {
 
 async function Login(req, res) {
   try {
-    const validateUser = userSchema.safeParse(req.body);
+    const validateUser = loginSchema.safeParse(req.body);
     if (!validateUser.success) {
       return res.status(400).json({
         message: "Validation failed",

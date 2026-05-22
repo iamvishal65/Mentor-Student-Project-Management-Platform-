@@ -4,6 +4,7 @@ const {
   reapplyForMentor,
   createMentor,
 } = require("../services/mentor.service");
+const { updateUserProfile } = require("../services/profile.services");
 const { roleAddition } = require("../services/user.services");
 const { mentorregisterSchema } = require("../validators/mentor.validator");
 async function applicationState(req, res) {
@@ -121,6 +122,7 @@ async function newMentor(req, res) {
     const userId = req.token.id;
     
     await createMentor(data,userId);
+    await updateUserProfile(userId,"mentor");
     await roleAddition(userId,"mentor")
     res.status(201).json({
       success: true,

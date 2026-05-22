@@ -1,16 +1,6 @@
 const { z } = require("zod");
 
 const mentorregisterSchema = z.object({
-  firstName: z
-    .string()
-    .regex(/^[a-zA-Z]+$/)
-    .max(50)
-    .describe("invalid text"),
-  lastName: z
-    .string()
-    .regex(/^[a-zA-Z]+$/)
-    .max(50)
-    .describe("invalid text"),
   
   designation: z
     .string()

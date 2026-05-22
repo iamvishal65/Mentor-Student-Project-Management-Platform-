@@ -1,50 +1,44 @@
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import MessagePageStructure from "./MessagePageStructure";
+
+
 
 const WS_URL = "ws://localhost:8080";
 
-const MessagePage = () => {
+const ChatPage = () => {
   const wsRef = useRef(null);
-
-  // ==============================
-  // STATE
-  // ==============================
-
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [selectedChat, setSelectedChat] = useState(null);
 
-  // ==============================
-  // CONNECT WS
-  // ==============================
+  const reconnectRef = useRef(true);
+  const maxReconnectionAttempt = 10;
+  const attemptRef = useRef(0);
+  const delayRef = useRef(0);
+  const reconnectTimeoutRef = useRef(null);
+  const pingIntervalRef = useRef(null);
 
   const connectWS = useCallback(() => {
+    if (!navigator.onLine) {
+      console.log("offline");
+      return;
+    }
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
-
-    let pingInterval;
-    let attempt = 0;
-    const maxReconnectionAttempt = 10;
-
-    // ------------------------------
-    // OPEN
-    // ------------------------------
-
     ws.onopen = () => {
+      reconnectRef.current = true;
+      clearTimeout(reconnectTimeoutRef.current);
+      attemptRef.current = 0;
+
       console.log("Connected");
-      pingInterval = setInterval(() => {
+      pingIntervalRef.current = setInterval(() => {
         if (wsRef.current.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({ type: "ping" }));
         }
       }, 3000);
       setConnectionStatus("connected");
     };
-
-    // ------------------------------
-    // MESSAGE
-    // ------------------------------
-
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -53,9 +47,11 @@ const MessagePage = () => {
           case "NEW_MESSAGE":
             setMessages((prev) => [...prev, data.payload]);
             break;
+
           case "CHAT_HISTORY":
             setMessages(data.payload);
             break;
+
           default:
             console.log("Unknown event");
         }
@@ -63,62 +59,50 @@ const MessagePage = () => {
         console.error(err);
       }
     };
-
-    // ------------------------------
-    // ERROR
-    // ------------------------------
-
     ws.onerror = (err) => {
       console.log("WS Error", err);
       setConnectionStatus("error");
     };
-
-    // ------------------------------
-    // CLOSE
-    // ------------------------------
-
     ws.onclose = () => {
-      clearInterval(pingInterval);
+       if (wsRef.current !== ws) return;
+      clearInterval(pingIntervalRef.current);
+      if (!reconnectRef.current) return;
+      if (!navigator.onLine) return;
+      if (attemptRef.current >= maxReconnectionAttempt) return;
       setConnectionStatus("disconnected");
-
-      const reconnecting = () => {
-        if (attempt >= maxReconnectionAttempt) {
-          console.error("Max reconnection attempts reached.");
-          return;
-        }
-        const delay = getBackoffDelay(attempt);
-        console.log(`Reconnecting in ${delay}ms`);
-        setTimeout(() => {
-          attempt++;
-          connectWS();
-        }, delay);
-      };
-
       reconnecting();
     };
+    const reconnecting = () => {
+      if (attemptRef.current >= maxReconnectionAttempt) {
+        console.error("Max reconnection attempts reached.");
+        return;
+      }
+      delayRef.current = getBackoffDelay(attemptRef.current);
+      console.log(`Reconnecting in ${delayRef.current}ms`);
+
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = setTimeout(() => {
+        attemptRef.current++;
+        connectWS();
+      }, delayRef.current);
+    };
+    const getBackoffDelay = (attempt) => {
+      const base = 500; // 0.5 second
+      const max = 30000; // 30 seconds
+      const jitter = Math.random() * 1000;
+      return Math.min(base * 2 ** attempt + jitter, max);
+    };
   }, []);
-
-  const getBackoffDelay = (attempt) => {
-    const base = 500; // 0.5 second
-    const max = 30000; // 30 seconds
-    const jitter = Math.random() * 1000;
-    return Math.min(base * 2 ** attempt + jitter, max);
-  };
-
-  // ==============================
-  // INITIAL CONNECT
-  // ==============================
 
   useEffect(() => {
     connectWS();
     return () => {
+      reconnectRef.current = false;
+      clearInterval(pingIntervalRef.current);
+      clearTimeout(reconnectTimeoutRef.current);
       wsRef.current?.close();
     };
   }, [connectWS]);
-
-  // ==============================
-  // SEND MESSAGE
-  // ==============================
 
   const sendMessage = () => {
     if (!input.trim()) return;
@@ -134,9 +118,7 @@ const MessagePage = () => {
         timestamp: new Date(),
       },
     };
-
     wsRef.current.send(JSON.stringify(messageData));
-
     // optimistic update
     setMessages((prev) => [
       ...prev,
@@ -145,13 +127,8 @@ const MessagePage = () => {
         self: true,
       },
     ]);
-
     setInput("");
   };
-
-  // ==============================
-  // SELECT CHAT
-  // ==============================
 
   const openChat = (chatId) => {
     setSelectedChat(chatId);
@@ -160,22 +137,14 @@ const MessagePage = () => {
         JSON.stringify({
           type: "GET_CHAT_HISTORY",
           payload: { chatId },
-        })
+        }),
       );
     }
   };
 
   return (
-    <MessagePageStructure
-      messages={messages}
-      input={input}
-      setInput={setInput}
-      sendMessage={sendMessage}
-      selectedChat={selectedChat}
-      openChat={openChat}
-      connectionStatus={connectionStatus}
-    />
+   <></>
   );
 };
 
-export default MessagePage;
+export default ChatPage;

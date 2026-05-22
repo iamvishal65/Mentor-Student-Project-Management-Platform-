@@ -10,7 +10,6 @@ async function changeStatusToApprove(Id) {
     { new: true }             // optional but useful
   );
 }
-
 async function changeStatusToReject(Id) {
   return await MentorApplicationModel.findByIdAndUpdate(
     Id,

@@ -1,5 +1,5 @@
 const userModel=require('../models/User.model')
-const { hashPassword } = require("../utils/hashPassword.util");
+const  {hashedPassword } = require("../utils/hashPassword.util");
 
 
 async function adminCheck(){
@@ -10,8 +10,10 @@ async function adminCheck(){
         return;
     }
     
-    const passwordHash=await hashPassword(process.env.ADMIN_PASSWORD);
+    const passwordHash=await hashedPassword(process.env.ADMIN_PASSWORD);
     await userModel.create({
+        name:process.env.ADMIN_NAME,
+        userName:process.env.ADMIN_USERNAME,
         email:process.env.ADMIN_EMAIL,
         password:passwordHash,
         roles:["admin"]

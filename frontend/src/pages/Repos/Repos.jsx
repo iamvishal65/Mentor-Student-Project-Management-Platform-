@@ -12,7 +12,6 @@ const Repos = () => {
     const fetchRepos = async () => {
       try {
         const res = await axiosInstance.get("/api/auth/github/repos");
-        console.log('hi');
         
         setRepos(res.data);
       } catch (err) {

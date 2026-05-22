@@ -5,8 +5,6 @@ async function checkStudent(userId) {
 }
 
 async function newStudent({
-  firstName,
-  lastName,
   enrollment_number,
   admissionYear,
 },userId) {

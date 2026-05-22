@@ -6,15 +6,6 @@ const mentorSchema = new mongoose.Schema({
     ref: "userData",
     required: true,
   },
-  firstName: {
-    type: String,
-    required: true,
-  },
-  lastName: {
-    type: String,
-    required: true,
-  },
-
   designation: {
     type: String,
     required: true,

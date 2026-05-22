@@ -1,6 +1,7 @@
 const { roleAddition } = require('../services/user.services');
 const studentSchema=require('../validators/student.validator')
-const {newStudent}=require('../services/student.service')
+const {newStudent}=require('../services/student.service');
+const { updateUserProfile } = require('../services/profile.services');
 
 
 async function registerStudent(req, res) {
@@ -19,6 +20,7 @@ async function registerStudent(req, res) {
     const data = validateUser.data;
     const userId = req.token.id
     const user = await newStudent(data,userId);
+    await updateUserProfile(userId,"student");
     if (user.error) {
       return res.status(400).json({ message: user.error.message, success: false });
     }
