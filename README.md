@@ -2,7 +2,7 @@
 
 A full-stack web application that enables structured mentorship by allowing students to apply to mentors, collaborate on projects, and communicate in real time — all managed through a role-based access system.
 
-**Live Demo:** [notes-m6wv.vercel.app](https://notes-m6wv.vercel.app)
+**Live Demo:** [notes-m6wv.vercel.app]()
 
 ---
 
