@@ -1,3 +1,5 @@
+import SearchBar from "../../components/searchBar/SearchBar";
+
 const HomeSchema = () => {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6">
@@ -9,18 +11,7 @@ const HomeSchema = () => {
           <p className="mt-1 text-sm text-gray-500">
             Search projects, users, mentors...
           </p>
-
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-            <input
-              type="text"
-              placeholder="Search..."
-              className="h-12 w-full rounded-xl border border-gray-300 px-4 outline-none focus:border-blue-500"
-            />
-
-            <button className="h-12 rounded-xl bg-blue-600 px-6 text-white hover:bg-blue-700">
-              Search
-            </button>
-          </div>
+          <SearchBar className="mt-4 w-full" scope="profile"/>
         </div>
 
         {/* Updates Only */}

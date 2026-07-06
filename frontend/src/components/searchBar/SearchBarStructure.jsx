@@ -1,13 +1,11 @@
 // SearchBar.jsx
-import React from "react";
+import React, { useState } from "react";
 
 export default function SearchBarStructure({
-  value,
-  onChange,
   onSearch,
-  placeholder = "Search...",
-  className = "",
+  className ,
 }) {
+  const [value, setValue] = useState("");
   const handleSubmit = (e) => {
     e.preventDefault();
     if (onSearch) onSearch(value);
@@ -17,9 +15,8 @@ export default function SearchBarStructure({
     <form onSubmit={handleSubmit} className={`flex gap-2 ${className}`}>
       <input
         type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Search..."
         className="w-full rounded-md border px-3 py-2 outline-none"
       />
       <button

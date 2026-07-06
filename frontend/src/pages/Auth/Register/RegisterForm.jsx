@@ -1,7 +1,7 @@
 import React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { registerSchema } from "./RegisterSchema";
 import { useForm } from "react-hook-form";
+import { registerSchema } from "./RegisterSchema";
 
 export default function RegisterForm({ onSubmit, loading }) {
   const {
@@ -21,7 +21,6 @@ export default function RegisterForm({ onSubmit, loading }) {
       <div className="flex flex-col items-center gap-2 box-border border border-black p-3 w-[400px] rounded-lg">
         <h2 className="text-xl font-bold">Register</h2>
 
-        {/* Name */}
         <label className="flex flex-col">
           <span className="mb-1">Name:</span>
           <input
@@ -30,12 +29,9 @@ export default function RegisterForm({ onSubmit, loading }) {
             className="border rounded-md border-black p-2 w-[250px]"
             {...register("name")}
           />
-          {errors.name && (
-            <p className="text-red-500">{errors.name.message}</p>
-          )}
+          {errors.name && <p className="text-red-500">{errors.name.message}</p>}
         </label>
 
-        {/* Username */}
         <label className="flex flex-col">
           <span className="mb-1">Username:</span>
           <input
@@ -44,12 +40,11 @@ export default function RegisterForm({ onSubmit, loading }) {
             className="border rounded-md border-black p-2 w-[250px]"
             {...register("userName")}
           />
-          {errors.username && (
-            <p className="text-red-500">{errors.username.message}</p>
+          {errors.userName && (
+            <p className="text-red-500">{errors.userName.message}</p>
           )}
         </label>
 
-        {/* Email */}
         <label className="flex flex-col">
           <span className="mb-1">Email:</span>
           <input
@@ -63,7 +58,6 @@ export default function RegisterForm({ onSubmit, loading }) {
           )}
         </label>
 
-        {/* Password */}
         <label className="flex flex-col">
           <span className="mb-1">Password:</span>
           <input
@@ -77,7 +71,6 @@ export default function RegisterForm({ onSubmit, loading }) {
           )}
         </label>
 
-        {/* Confirm Password */}
         <label className="flex flex-col">
           <span className="mb-1">Confirm Password:</span>
           <input
@@ -97,7 +90,7 @@ export default function RegisterForm({ onSubmit, loading }) {
           type="submit"
           disabled={!isValid || loading}
           className={`w-[250px] py-2 rounded text-white ${
-            loading
+            !isValid || loading
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-green-600 hover:bg-green-700"
           }`}

@@ -11,19 +11,12 @@ const profileSchema = new mongoose.Schema(
     },
     userName: {
       type: String,
-      trim: true,
       unique:true,
-      default: () => {
-        return "user_" + Math.random().toString(36).slice(2, 9);
-      },
+      required:true
     },
     Name: {
       type: String,
-      trim: true,
-      unique:true,
-      default: () => {
-        return "user_" + Math.random().toString(36).slice(2, 9);
-      },
+      required:true
     },
     profilePicture: {
       type: String,

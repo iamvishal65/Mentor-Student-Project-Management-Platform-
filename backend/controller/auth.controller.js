@@ -34,7 +34,7 @@ async function Register(req, res) {
       message: "User registered successfully",
     });
   } catch (error) {
-    console.error("error is:" + error);
+    console.error("error issa:" + error);
     res.status(500).json({ message: error.message, success: false });
   }
 }

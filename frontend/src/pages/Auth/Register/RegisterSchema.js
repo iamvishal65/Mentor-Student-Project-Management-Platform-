@@ -9,8 +9,9 @@ export const registerSchema = z
       .max(50, "Name too long")
       .regex(
         /^[a-zA-Z]+(?:\s[a-zA-Z]+)*$/,
-        "Only letters and single spaces allowed",
+        "Only letters and single spaces allowed"
       ),
+
     userName: z
       .string()
       .trim()
@@ -18,7 +19,7 @@ export const registerSchema = z
       .max(30, "Username must be at most 30 characters")
       .regex(
         /^[a-zA-Z0-9_]+$/,
-        "Username can only contain letters, numbers, and underscores",
+        "Username can only contain letters, numbers, and underscores"
       ),
 
     email: z
@@ -35,6 +36,7 @@ export const registerSchema = z
       .regex(/[a-z]/, "Must contain at least one lowercase letter")
       .regex(/[0-9]/, "Must contain at least one number")
       .regex(/[@$!%*?&]/, "Must contain at least one special character"),
+
     confirmPassword: z.string().min(1, "Please confirm your password"),
   })
   .refine((data) => data.password === data.confirmPassword, {

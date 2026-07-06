@@ -1,16 +1,26 @@
 const profileModel = require("../models/profile.model");
 
-async function searchProfile(q) {}
+async function searchProfile(q) {
+  return await profileModel.findOne({ userName: q });
+}
 async function createNewProfile({ name, userName }, userId) {
   await profileModel.create({
-    userId,
-    name,
-    userName,
+    user: userId,
+    userName: userName,
+    Name: name,
   });
 }
-async function updateUserProfile(id,role) {
-  await userModel.findByIdAndUpdate(userId, {
-    $addToSet: { roles: role },
-  });
+async function updateUserProfile(userId, role) {
+  return await profileModel.findOneAndUpdate(
+    { user: userId },
+    {
+      $addToSet: {
+        roles: role,
+      },
+    },
+    {
+      new: true,
+    }
+  );
 }
-module.exports = { createNewProfile,updateUserProfile };
+module.exports = { createNewProfile, updateUserProfile, searchProfile };

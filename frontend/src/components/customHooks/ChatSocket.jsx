@@ -1,16 +1,12 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-
-
-
 const WS_URL = "ws://localhost:8080";
 
-const ChatPage = () => {
+const useChatSocket = () => {
   const wsRef = useRef(null);
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("connecting");
-  const [selectedChat, setSelectedChat] = useState(null);
+  const[conversationId,setConversationId]=useState(null);
 
   const reconnectRef = useRef(true);
   const maxReconnectionAttempt = 10;
@@ -45,11 +41,11 @@ const ChatPage = () => {
         console.log("Incoming:", data);
         switch (data.type) {
           case "NEW_MESSAGE":
-            setMessages((prev) => [...prev, data.payload]);
+            handlNewMessage(data);
             break;
 
           case "CHAT_HISTORY":
-            setMessages(data.payload);
+            handleHistory(data);
             break;
 
           default:
@@ -92,6 +88,12 @@ const ChatPage = () => {
       const jitter = Math.random() * 1000;
       return Math.min(base * 2 ** attempt + jitter, max);
     };
+    const handleHistory=(data)=>{
+      setMessages(data.payload);
+    };
+    const handlNewMessage=(data)=>{
+      setMessages((prev) => [...prev, data.payload]);
+    }
   }, []);
 
   useEffect(() => {
@@ -104,7 +106,7 @@ const ChatPage = () => {
     };
   }, [connectWS]);
 
-  const sendMessage = () => {
+  const sendMessage = (input) => {
     if (!input.trim()) return;
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       console.log("Socket not connected");
@@ -113,9 +115,10 @@ const ChatPage = () => {
     const messageData = {
       type: "SEND_MESSAGE",
       payload: {
-        chatId: selectedChat,
+        receiverId: selectedChat,
         content: input,
         timestamp: new Date(),
+        conversationId:conversationId
       },
     };
     wsRef.current.send(JSON.stringify(messageData));
@@ -124,7 +127,6 @@ const ChatPage = () => {
       ...prev,
       {
         ...messageData.payload,
-        self: true,
       },
     ]);
     setInput("");
@@ -142,9 +144,7 @@ const ChatPage = () => {
     }
   };
 
-  return (
-   <></>
-  );
+  return {messages,conversationId};
 };
 
-export default ChatPage;
+export default useChatSocket;

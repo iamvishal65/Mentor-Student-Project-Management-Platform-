@@ -4,6 +4,8 @@ const {
   handleSend,
   validateMessage,
   validateReceiver,
+  checkConversationState,
+  createConversation,
 } = require("../services/message.service");
 
 function addUserToOnlineUsers(ws, onlineUsers) {
@@ -24,7 +26,7 @@ async function routeMessage(ws, msg, onlineUsers) {
       JSON.stringify({
         type: "ERROR",
         message: "Invalid message format",
-      })
+      }),
     );
     return;
   }
@@ -36,7 +38,7 @@ async function routeMessage(ws, msg, onlineUsers) {
       JSON.stringify({
         type: "ERROR",
         message: receiverValidation.error,
-      })
+      }),
     );
     return;
   }
@@ -50,7 +52,7 @@ async function routeMessage(ws, msg, onlineUsers) {
           JSON.stringify({
             type: "ERROR",
             errors: result.errors,
-          })
+          }),
         );
         return;
       }
@@ -65,7 +67,7 @@ async function routeMessage(ws, msg, onlineUsers) {
           JSON.stringify({
             type: "ERROR",
             message: "messageId is required for status",
-          })
+          }),
         );
         return;
       }
@@ -80,7 +82,7 @@ async function routeMessage(ws, msg, onlineUsers) {
           JSON.stringify({
             type: "ERROR",
             message: "messageId is required for typing",
-          })
+          }),
         );
         return;
       }
@@ -95,7 +97,7 @@ async function routeMessage(ws, msg, onlineUsers) {
           JSON.stringify({
             type: "ERROR",
             message: "messageId is required for notification",
-          })
+          }),
         );
         return;
       }
@@ -109,7 +111,7 @@ async function routeMessage(ws, msg, onlineUsers) {
         JSON.stringify({
           type: "ERROR",
           message: `Unknown message type: ${msg.type}`,
-        })
+        }),
       );
   }
 }
@@ -118,13 +120,25 @@ async function handleMessage(ws, msg, onlineUsers) {
   try {
     if (!ws || !ws.userId) return;
     if (!onlineUsers.has(ws.userId)) return;
-    await saveMessage(msg, ws.userId);
+    let conversation=msg.conversationId;
+    if (conversation) {
+      const conversationExist=checkConversationExisted(conversation);
+      if (conversationExist == null) {
+        conversation = createConversation(msg, ws.userId);
+      }
+    } else {
+      conversation = checkConversationState(ws.userId, msg.id);
+      if (conversation == null) {
+        conversation = createConversation(msg, ws.userId);
+      }
+    }
+    await saveMessage(conversation,msg, ws.userId);
     const receiver = getReceiver(msg, onlineUsers);
     if (receiver) handleSend(receiver, msg);
   } catch (error) {
     console.error("handleMessage error:", error);
     ws.send(
-      JSON.stringify({ type: "ERROR", message: "Failed to send message" })
+      JSON.stringify({ type: "ERROR", message: "Failed to send message" }),
     );
   }
 }
@@ -143,7 +157,7 @@ async function handleStatus(ws, msg, onlineUsers) {
   } catch (error) {
     console.error("handleStatus error:", error);
     ws.send(
-      JSON.stringify({ type: "ERROR", message: "Failed to update status" })
+      JSON.stringify({ type: "ERROR", message: "Failed to update status" }),
     );
   }
 }
@@ -161,7 +175,7 @@ function handleDisconnect(ws, onlineUsers) {
   }
 }
 
-async function handleTyping(ws, msg, onlineUsers){
+async function handleTyping(ws, msg, onlineUsers) {
   try {
     const receiver = getReceiver(msg, onlineUsers);
     if (!receiver) return;
@@ -174,31 +188,10 @@ async function handleTyping(ws, msg, onlineUsers){
   } catch (error) {
     console.error("handleTyping error:", error);
     ws.send(
-      JSON.stringify({ type: "ERROR", message: "Failed to send typing" })
+      JSON.stringify({ type: "ERROR", message: "Failed to send typing" }),
     );
   }
 }
-
-
-function notification(){}
-
-async function recentChats(req,res){
-  try {
-    const recentMessages = getRecentMessages(msg, onlineUsers);
-    if (!receiver) return;
-  } catch (error) {
-    
-  }
-}
-
-async function allMentor(req,res){
-  try {
-    const checkReciever=h
-  } catch (error) {
-    
-  }
-}
-function allStundet(req,res){}
 
 async function recentChats(req, res) {
   try {
@@ -251,92 +244,37 @@ async function recentChats(req, res) {
   }
 }
 
-async function allMentor(req, res) {
+async function checkConversation(req, res) {
   try {
-    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
-    const limit = Math.min(parseInt(req.query.limit || "10", 10), 50);
-    const skip = (page - 1) * limit;
+    const userId = req.token.id;
+    const otherUserId = req.params.otherUserId;
 
-    const filter = {
-      role: "MENTOR",
-    };
+    const conversation = await checkConversationState(userId, otherUserId);
 
-    const totalMentors = await User.countDocuments(filter);
+    if (!conversation) {
+      return res.status(200).json({
+        conversationExists: false,
+        conversation: null,
+        message: "Conversation not created yet",
+      });
+    }
 
-    const mentors = await User.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    return res.json({
-      success: true,
-      data: mentors,
-      pagination: {
-        page,
-        limit,
-        totalDocs: totalMentors,
-        totalPages: Math.ceil(totalMentors / limit),
-        hasNextPage: page * limit < totalMentors,
-        hasPrevPage: page > 1,
-      },
+    return res.status(200).json({
+      conversationExists: true,
+      conversation,
+      message: "Conversation found",
     });
   } catch (error) {
     return res.status(500).json({
-      success: false,
       message: error.message,
     });
   }
 }
-
-async function allStundet(req, res) {
-  try {
-    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
-    const limit = Math.min(parseInt(req.query.limit || "10", 10), 50);
-    const skip = (page - 1) * limit;
-
-    const filter = {
-      role: "STUDENT",
-    };
-
-    const totalStudents = await User.countDocuments(filter);
-
-    const students = await User.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    return res.json({
-      success: true,
-      data: students,
-      pagination: {
-        page,
-        limit,
-        totalDocs: totalStudents,
-        totalPages: Math.ceil(totalStudents / limit),
-        hasNextPage: page * limit < totalStudents,
-        hasPrevPage: page > 1,
-      },
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-}
-
-function notification(){}
-
 
 module.exports = {
   handleDisconnect,
   addUserToOnlineUsers,
   routeMessage,
-
-  allStundet,
-  allMentor,
-  recentChats
-
-}; 
+  recentChats,
+  checkConversation,
+};

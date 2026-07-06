@@ -1,179 +1,59 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import MessagePageStructure from "./MessagePageStructure";
+import axiosInstance from "../../../api/authApi";
+import { useRecoilValue } from "recoil";
+import { userProfileData } from "../../../recoil/ProfileData";
+import useChatSocket from "../../../components/customHooks/ChatSocket";
 
-const WS_URL = "ws://localhost:8080";
 
 const MessagePage = () => {
-  const wsRef = useRef(null);
-
-  // ==============================
-  // STATE
-  // ==============================
-
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const[messages,conversationId]=useChatSocket();
   const [selectedChat, setSelectedChat] = useState(null);
+  const profileData = useRecoilValue(userProfileData);
 
-  // ==============================
-  // CONNECT WS
-  // ==============================
-
-  const connectWS = useCallback(() => {
-    const ws = new WebSocket(WS_URL);
-    wsRef.current = ws;
-
-    let pingInterval;
-    let attempt = 0;
-    const maxReconnectionAttempt = 10;
-
-    // ------------------------------
-    // OPEN
-    // ------------------------------
-
-    ws.onopen = () => {
-      console.log("Connected");
-      pingInterval = setInterval(() => {
-        if (wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ type: "ping" }));
-        }
-      }, 3000);
-      setConnectionStatus("connected");
-    };
-
-    // ------------------------------
-    // MESSAGE
-    // ------------------------------
-
-    ws.onmessage = (event) => {
+  useEffect(() => {
+    if (!profileData?._id) return;
+    async function fetchChats() {
       try {
-        const data = JSON.parse(event.data);
-        console.log("Incoming:", data);
-        switch (data.type) {
-          case "NEW_MESSAGE":
-            setMessages((prev) => [...prev, data.payload]);
-            break;
-          case "CHAT_HISTORY":
-            setMessages(data.payload);
-            break;
-          default:
-            console.log("Unknown event");
+        const { data } = await axiosInstance.get(
+          `/api/user/message/checkConversation/${profileData._id}`
+        );
+        // No conversation yet
+        if (!data.conversation) {
+          setConversations([]);
+          setSelectedChat({
+            _id: null,
+            user: profileData,
+            messages: [],
+            conversationExists: false,
+          });
+
+          return;
         }
+
+        // Conversation exists
+        setConversations([data.conversation]);
+        setSelectedChat({
+          ...data.conversation,
+          conversationExists: true,
+        });
       } catch (err) {
         console.error(err);
       }
-    };
-
-    // ------------------------------
-    // ERROR
-    // ------------------------------
-
-    ws.onerror = (err) => {
-      console.log("WS Error", err);
-      setConnectionStatus("error");
-    };
-
-    // ------------------------------
-    // CLOSE
-    // ------------------------------
-
-    ws.onclose = () => {
-      clearInterval(pingInterval);
-      setConnectionStatus("disconnected");
-
-      const reconnecting = () => {
-        if (attempt >= maxReconnectionAttempt) {
-          console.error("Max reconnection attempts reached.");
-          return;
-        }
-        const delay = getBackoffDelay(attempt);
-        console.log(`Reconnecting in ${delay}ms`);
-        setTimeout(() => {
-          attempt++;
-          connectWS();
-        }, delay);
-      };
-
-      reconnecting();
-    };
-  }, []);
-
-  const getBackoffDelay = (attempt) => {
-    const base = 500; // 0.5 second
-    const max = 30000; // 30 seconds
-    const jitter = Math.random() * 1000;
-    return Math.min(base * 2 ** attempt + jitter, max);
-  };
-
-  // ==============================
-  // INITIAL CONNECT
-  // ==============================
-
-  useEffect(() => {
-    connectWS();
-    return () => {
-      wsRef.current?.close();
-    };
-  }, [connectWS]);
-
-  // ==============================
-  // SEND MESSAGE
-  // ==============================
-
-  const sendMessage = () => {
-    if (!input.trim()) return;
-    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      console.log("Socket not connected");
-      return;
     }
-    const messageData = {
-      type: "SEND_MESSAGE",
-      payload: {
-        chatId: selectedChat,
-        content: input,
-        timestamp: new Date(),
-      },
-    };
 
-    wsRef.current.send(JSON.stringify(messageData));
-
-    // optimistic update
-    setMessages((prev) => [
-      ...prev,
-      {
-        ...messageData.payload,
-        self: true,
-      },
-    ]);
-
-    setInput("");
-  };
-
-  // ==============================
-  // SELECT CHAT
-  // ==============================
-
-  const openChat = (chatId) => {
-    setSelectedChat(chatId);
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(
-        JSON.stringify({
-          type: "GET_CHAT_HISTORY",
-          payload: { chatId },
-        })
-      );
-    }
-  };
-
+    fetchChats();
+  }, [profileData]);
+ function onSend(message){
+ 
+}
   return (
     <MessagePageStructure
-      messages={messages}
-      input={input}
-      setInput={setInput}
-      sendMessage={sendMessage}
+      chats={conversations}
       selectedChat={selectedChat}
-      openChat={openChat}
-      connectionStatus={connectionStatus}
+      setSelectedChat={setSelectedChat}
+      currentUserId={null} 
+      onSendMessage={onSend}
     />
   );
 };

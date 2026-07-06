@@ -3,7 +3,8 @@ import RegisterForm from "./RegisterForm";
 import useRegister from "./UseRegister";
 
 const Register = () => {
-  const { handleSubmit, loading, goLogin } = useRegister();
+  const { handleRegister, loading, goLogin } = useRegister();
+
   return (
     <div className="relative">
       <button
@@ -13,7 +14,7 @@ const Register = () => {
         Login
       </button>
 
-      <RegisterForm onSubmit={handleSubmit} loading={loading} />
+      <RegisterForm onSubmit={handleRegister} loading={loading} />
     </div>
   );
 };

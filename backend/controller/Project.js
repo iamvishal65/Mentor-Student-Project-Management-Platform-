@@ -94,7 +94,15 @@ async function everyoneProject(req, res) {
     return res.status(500).json({ message: error.message });
   }
 }
-
+async function userProject(req,res){
+    try {
+      const id=req.params.id;
+      const getProjects=getUserAllProject(id);
+      
+    } catch (error) {
+      
+    }
+}
 module.exports = {
   deleteProject,
   singleProject,

@@ -4,6 +4,7 @@ const projectCardSchema = new mongoose.Schema({
   projectName: {
     type: String,
     required: true,
+    index:true
   },
   description: {
     type: String,

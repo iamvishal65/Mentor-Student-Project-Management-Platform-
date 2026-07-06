@@ -122,7 +122,8 @@ async function newMentor(req, res) {
     const userId = req.token.id;
     
     await createMentor(data,userId);
-    await updateUserProfile(userId,"mentor");
+    const p=await updateUserProfile(userId,"mentor");
+    console.log(p);
     await roleAddition(userId,"mentor")
     res.status(201).json({
       success: true,
@@ -133,5 +134,41 @@ async function newMentor(req, res) {
     res.status(500).json({ message: error.message, success: false });
   }
 }
+async function allMentor(req, res) {
+  try {
+    const page = Math.max(parseInt(req.query.page || "1", 10), 1);
+    const limit = Math.min(parseInt(req.query.limit || "10", 10), 50);
+    const skip = (page - 1) * limit;
 
+    const filter = {
+      role: "MENTOR",
+    };
+
+    const totalMentors = await User.countDocuments(filter);
+
+    const mentors = await User.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    return res.json({
+      success: true,
+      data: mentors,
+      pagination: {
+        page,
+        limit,
+        totalDocs: totalMentors,
+        totalPages: Math.ceil(totalMentors / limit),
+        hasNextPage: page * limit < totalMentors,
+        hasPrevPage: page > 1,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
 module.exports = { applyForMentor, newMentor, applicationState };

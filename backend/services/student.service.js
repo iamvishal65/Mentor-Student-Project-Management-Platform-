@@ -16,8 +16,6 @@ async function newStudent({
   }
   const newS = await studentModel.create({
     userId,
-    firstName,
-    lastName,
     enrollment_number,
     admissionYear,
   });

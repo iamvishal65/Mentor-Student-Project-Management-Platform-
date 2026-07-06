@@ -8,6 +8,7 @@ import AppLayout from "../components/AppLayout/AppLayout";
 
 
 // 🔹 Lazy imports
+const Profile = lazy(() => import("../pages/profile/Profile"));
 const Home = lazy(() => import("../pages/Home/Home"));
 const MyProject = lazy(() => import("../pages/project/myproject/MyProject"));
 const Repos = lazy(() => import("../pages/Repos/Repos"));
@@ -31,15 +32,17 @@ const LinkRoutes = () => {
               <Route path="/" element={<Home />} />
               <Route path="/myProject" element={<MyProject />} />
               <Route path="/repos" element={<Repos />} />
+              <Route path="/Profile" element={<Profile/>} />
               <Route path="/dataProject" element={<DataProject />} />
               <Route path="/allProject" element={<AllProject />} />
               <Route path="/studentRegister" element={<StudentRegister />} />
               <Route path="/settings" element={<Setting />} />
-              <Route path="/profile" element={<UserData />} />
+              <Route path="/myProfile" element={<UserData />} />
               <Route path="/mentorRegister" element={<MentorRegister />} />
               <Route path="/mentorApplication" element={<MentorApplication />} />
               <Route path="/allApplication" element={<AllApplicaton />} />
               <Route path="/messagePage" element={<MessagePage />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
           </Route>
 

@@ -11,14 +11,14 @@ function handleSend(ws, msg) {
     }),
   );
 }
-async function saveMessage(msg, id) {
+async function saveMessage(conversationId,id,msg) {
   const senderId = id;
   const recipientId = msg.id;
   const message = msg.text;
 
   const participants = [senderId, recipientId].sort();
   const conversation = await conversationModel.findOneAndUpdate(
-    { participants },
+    { conversationId },
     {
       $set: {
         lastMessage: {
@@ -47,33 +47,32 @@ async function validateReceiver(id) {
     const registered = await userModel.findOne({
       _id: id,
       roles: {
-        $in: ["student", "mentor", "admin"]
-      }
+        $in: ["student", "mentor", "admin"],
+      },
     });
 
     if (!registered) {
       return {
         success: false,
-        error: "INVALID_RECEIVER"
+        error: "INVALID_RECEIVER",
       };
     }
 
     return {
       success: true,
-      data: registered
+      data: registered,
     };
-
   } catch (error) {
     console.error(error);
 
     return {
       success: false,
-      error: "DATABASE_ERROR"
+      error: "DATABASE_ERROR",
     };
   }
 }
 async function getReciver(msg, onlineUsers) {
-    return onlineUsers.has(msg.id);
+  return onlineUsers.has(msg.id);
 }
 function sendError(ws, message, code = "ERROR") {
   ws.send(
@@ -102,10 +101,35 @@ function validateMessage(msg) {
     data: result.data,
   };
 }
-
-function createConversation(){}
-
-
-function changeMessageStatus(ws,status){}
-function lastConversationMessages(){}
-module.exports = { handleSend, saveMessage, getReciver ,sendError,validateMessage,validateReceiver};
+async function checkConversationState(userId, otherUserId) {
+  const participants = [userId, otherUserId].sort();
+  const conversationCheck= await conversationModel.findOne({ participants });
+  if(conversationCheck)return conversationCheck._id;
+  else return null;
+}
+function createConversation(msg, id) {
+  const senderId = id;
+  const recipientId = msg.id;
+  const participants = [senderId, recipientId].sort();
+  const newConversation=conversationModel.create({
+    participants:participants
+  })
+  return newConversation._id;
+}
+async function checkConversationExist(conversatioId) {
+  const conversationCheck= await conversationModel.findOne({conversatioId});
+  if(conversationCheck)return conversationCheck._id;
+  else return null;
+}
+function changeMessageStatus(ws, status) {}
+function lastConversationMessages() {}
+module.exports = {
+  handleSend,
+  saveMessage,
+  getReciver,
+  sendError,
+  validateMessage,
+  validateReceiver,
+  checkConversationState,
+  createConversation
+};

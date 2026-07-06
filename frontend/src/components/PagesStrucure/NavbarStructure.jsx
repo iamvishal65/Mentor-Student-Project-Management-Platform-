@@ -4,26 +4,16 @@ import axiosInstance from "../../api/authApi";
 import { userData } from "../../recoil/UserData";
 import { useRecoilState } from "recoil";
 
-const navLinks = {
-  user: [
-    { label: "Home", path: "/" },
-    { label: "All Projects", path: "/allProject" },
-  ],
-  student: [
-    { label: "Home", path: "/" },
-    { label: "My Projects", path: "/myProject" },
-    { label: "All Projects", path: "/allProject" },
-    { label: "Messages", path: "/messagePage" },
-  ],
-  mentor: [
-    { label: "Home", path: "/" },
-    { label: "All Projects", path: "/allProject" },
-    { label: "Messages", path: "/messagePage" },
-  ],
-  admin: [
-    { label: "Home", path: "/" },
-    { label: "All Application", path: "/allApplication" },
-  ],
+const commonLinks = [
+  { label: "Home", path: "/" },
+  { label: "All Projects", path: "/allProject" },
+  {label: "My Project", path: "/myProject"}
+];
+
+const roleLinks = {
+  STUDENT: [{ label: "Messages", path: "/messagePage" }],
+  MENTOR: [{ label: "Messages", path: "/messagePage" }],
+  ADMIN: [{ label: "All Applications", path: "/allApplication" }],
 };
 
 const Navbar = () => {
@@ -33,16 +23,26 @@ const Navbar = () => {
   const navigate = useNavigate();
   const profileRef = useRef(null);
 
-  const role = data?.roles?.[0]?.toLowerCase() || "user";
-  const links = navLinks[role] || [];
+  const roles = data?.roles || [];
 
-  // ✅ Close profile dropdown on outside click
+  const isAdmin = roles.includes("admin");
+  const isMentor = roles.includes("mentor");
+  const isStudent = roles.includes("student");
+
+  const links = [
+    ...commonLinks,
+    ...(isStudent ? roleLinks.STUDENT : []),
+    ...(isMentor ? roleLinks.MENTOR : []),
+    ...(isAdmin ? roleLinks.ADMIN : []),
+  ];
+
   useEffect(() => {
     function handleClickOutside(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setProfileOpen(false);
       }
     }
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -50,15 +50,14 @@ const Navbar = () => {
   async function handleLogout() {
     try {
       const res = await axiosInstance.post("/api/auth/user/logout");
-      if (res.status !== 200) throw new Error("Error in logout");   // ✅ strict !==
-      setData(null);                                                 // ✅ clear Recoil state
+      if (res.status !== 200) throw new Error("Error in logout");
+      setData(null);
       navigate("/register");
     } catch (error) {
-      console.error("Error:", error.response?.data || error.message); // ✅ error.response
+      console.error("Error:", error.response?.data || error.message);
     }
   }
 
-  // ✅ Close mobile menu after navigation
   function handleMobileLinkClick() {
     setMenuOpen(false);
   }
@@ -70,12 +69,10 @@ const Navbar = () => {
                  bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700
                  shadow-md px-6 z-30"
     >
-      {/* Logo */}
       <div className="text-white text-2xl font-bold select-none">
         ProjectHub
       </div>
 
-      {/* Desktop Menu */}
       <div className="hidden md:flex items-center space-x-8 text-gray-100 font-medium">
         <ul className="flex space-x-8">
           {links.map((item) => (
@@ -86,12 +83,10 @@ const Navbar = () => {
         </ul>
       </div>
 
-      {/* Right side */}
       <div className="flex items-center space-x-4">
-        {/* Profile (Desktop) */}
         <div className="relative hidden md:block" ref={profileRef}>
           <img
-            src={data?.avatar || "https://i.pravatar.cc/50"}  // ✅ use real avatar
+            src={data?.avatar || "https://i.pravatar.cc/50"}
             alt="profile"
             className="w-10 h-10 rounded-full border-2 border-white cursor-pointer"
             onClick={() => setProfileOpen((prev) => !prev)}
@@ -100,12 +95,13 @@ const Navbar = () => {
           {profileOpen && (
             <div className="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-md py-2 text-gray-700 font-medium z-50">
               <Link
-                to="/profile"
+                to="/myProfile"
                 className="block px-4 py-2 hover:bg-gray-100"
                 onClick={() => setProfileOpen(false)}
               >
                 Profile
               </Link>
+
               <Link
                 to="/settings"
                 className="block px-4 py-2 hover:bg-gray-100"
@@ -113,8 +109,8 @@ const Navbar = () => {
               >
                 Settings
               </Link>
-              {/* ✅ Only show for roles that can apply */}
-              {role === "user" || role === "student" ? (
+
+              {(!isAdmin && !isMentor) && (
                 <Link
                   to="/mentorApplication"
                   className="block px-4 py-2 hover:bg-gray-100"
@@ -122,7 +118,8 @@ const Navbar = () => {
                 >
                   Apply for Mentor
                 </Link>
-              ) : null}
+              )}
+
               <button
                 className="block w-full text-left px-4 py-2 hover:bg-gray-100"
                 onClick={handleLogout}
@@ -133,24 +130,44 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
         <button
           className="md:hidden text-white focus:outline-none"
           onClick={() => setMenuOpen((prev) => !prev)}
         >
           {menuOpen ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-7 w-7"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-7 w-7"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             </svg>
           )}
         </button>
       </div>
 
-      {/* Mobile Dropdown — ✅ now role-aware */}
       {menuOpen && (
         <div className="absolute top-16 left-0 right-0 bg-gradient-to-b from-blue-700 to-purple-700 shadow-md md:hidden z-20">
           <div className="flex flex-col space-y-3 px-6 py-4 text-white font-medium">
@@ -159,7 +176,7 @@ const Navbar = () => {
                 key={item.path}
                 to={item.path}
                 className="mobile-link"
-                onClick={handleMobileLinkClick}   // ✅ closes menu on navigate
+                onClick={handleMobileLinkClick}
               >
                 {item.label}
               </Link>
@@ -169,26 +186,41 @@ const Navbar = () => {
 
             <div className="flex items-center space-x-3 mt-2">
               <img
-                src={data?.avatar || "https://i.pravatar.cc/50"}  // ✅ real avatar
+                src={data?.avatar || "https://i.pravatar.cc/50"}
                 alt="profile"
                 className="w-10 h-10 rounded-full border-2 border-white"
               />
               <span className="text-white font-semibold">
-                {data?.name || "Your Name"}                        // ✅ real name
+                {data?.name || "Your Name"}
               </span>
             </div>
 
-            <Link to="/profile" className="mobile-link mt-1" onClick={handleMobileLinkClick}>
+            <Link
+              to="/myProfile"
+              className="mobile-link mt-1"
+              onClick={handleMobileLinkClick}
+            >
               Profile
             </Link>
-            <Link to="/settings" className="mobile-link" onClick={handleMobileLinkClick}>
+
+            <Link
+              to="/settings"
+              className="mobile-link"
+              onClick={handleMobileLinkClick}
+            >
               Settings
             </Link>
-            {(role === "user" || role === "student") && (
-              <Link to="/mentorApplication" className="mobile-link" onClick={handleMobileLinkClick}>
+
+            {(isStudent || isMentor) && (
+              <Link
+                to="/mentorApplication"
+                className="mobile-link"
+                onClick={handleMobileLinkClick}
+              >
                 Apply for Mentor
               </Link>
             )}
+
             <button className="text-left mobile-link" onClick={handleLogout}>
               Logout
             </button>

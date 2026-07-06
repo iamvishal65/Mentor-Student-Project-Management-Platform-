@@ -43,7 +43,7 @@ async function checkUser({ email, password }) {
 }
 
 async function checkLoggedIn(userId) {
-  const user = userModel.findById(userId);
+  const user = await userModel.findById(userId);
   return user;
 }
 

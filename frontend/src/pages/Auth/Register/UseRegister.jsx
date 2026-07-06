@@ -5,16 +5,20 @@ import axiosInstance from "../../../api/authApi";
 export default function useRegister() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const handleSubmit = async (data) => {
+
+  const handleRegister = async (data) => {
     try {
       if (!data) throw new Error("Enter data");
+
       setLoading(true);
+
       const res = await axiosInstance.post("/api/auth/user/register", data);
-      if (res.status != 201 || !res.data?.success) {
-        throw new Error(res.data.message);
+
+      if (res.status !== 201 || !res.data?.success) {
+        throw new Error(res.data?.message || "Registration failed");
       }
+
       console.log("registered");
-      setLoading(false);
       navigate("/login");
     } catch (error) {
       console.error("Error:", error.response?.data || error.message);
@@ -22,8 +26,10 @@ export default function useRegister() {
       setLoading(false);
     }
   };
+
   function goLogin() {
     navigate("/login");
   }
-  return { handleSubmit, loading, goLogin };
+
+  return { handleRegister, loading, goLogin };
 }
