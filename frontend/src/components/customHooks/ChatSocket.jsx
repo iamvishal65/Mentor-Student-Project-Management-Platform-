@@ -6,7 +6,7 @@ const useChatSocket = () => {
   const wsRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
-  const[conversationId,setConversationId]=useState(null);
+  
 
   const reconnectRef = useRef(true);
   const maxReconnectionAttempt = 10;

@@ -3,7 +3,7 @@ import axiosInstance from "../../../api/authApi";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import MentorApplicationStructure from "./mentorApplicationStructure";
+import MentorApplicationStructure from "./MentorApplicationStructure"
 
 const MentorApplication = () => {
   const [applicationStatus, setApplicationStatus] = useState(null);

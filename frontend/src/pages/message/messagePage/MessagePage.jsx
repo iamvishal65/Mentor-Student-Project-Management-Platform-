@@ -10,7 +10,7 @@ const MessagePage = () => {
   const[messages,conversationId]=useChatSocket();
   const [selectedChat, setSelectedChat] = useState(null);
   const profileData = useRecoilValue(userProfileData);
-
+  const[conversationId,setConversationId]=useState(null);
   useEffect(() => {
     if (!profileData?._id) return;
     async function fetchChats() {
