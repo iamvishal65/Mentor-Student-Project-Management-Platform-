@@ -11,14 +11,14 @@ function handleSend(ws, msg) {
     }),
   );
 }
-async function saveMessage(conversationId,id,msg) {
+async function saveMessage(conversationId,msg,id) {
   const senderId = id;
-  const recipientId = msg.id;
+  const recipientId = msg.receiverId;
   const message = msg.text;
-
+console.log("yo"+senderId,recipientId+"yo")
   const participants = [senderId, recipientId].sort();
   const conversation = await conversationModel.findOneAndUpdate(
-    { conversationId },
+    { _id:conversationId },
     {
       $set: {
         lastMessage: {
@@ -31,7 +31,6 @@ async function saveMessage(conversationId,id,msg) {
       },
     },
     {
-      upsert: true,
       new: true,
     },
   );
@@ -71,7 +70,7 @@ async function validateReceiver(id) {
     };
   }
 }
-async function getReciver(msg, onlineUsers) {
+function getReciver(msg, onlineUsers) {
   return onlineUsers.has(msg.id);
 }
 function sendError(ws, message, code = "ERROR") {
@@ -98,7 +97,7 @@ function validateMessage(msg) {
 
   return {
     success: true,
-    data: result.data,
+    data: result.message,
   };
 }
 async function checkConversationState(userId, otherUserId) {
@@ -107,17 +106,17 @@ async function checkConversationState(userId, otherUserId) {
   if(conversationCheck)return conversationCheck._id;
   else return null;
 }
-function createConversation(msg, id) {
+async function createConversation(msg, id) {
   const senderId = id;
-  const recipientId = msg.id;
+  const recipientId = msg.receiverId;
   const participants = [senderId, recipientId].sort();
-  const newConversation=conversationModel.create({
+  const newConversation=await conversationModel.create({
     participants:participants
   })
   return newConversation._id;
 }
 async function checkConversationExist(conversatioId) {
-  const conversationCheck= await conversationModel.findOne({conversatioId});
+  const conversationCheck= await conversationModel.findOne({_id:conversatioId});
   if(conversationCheck)return conversationCheck._id;
   else return null;
 }

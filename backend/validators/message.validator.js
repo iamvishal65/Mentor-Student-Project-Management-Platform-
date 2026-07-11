@@ -1,9 +1,6 @@
 const { z } = require("zod");
 const sendMessageSchema = z.object({
-  conversationId: z
-    .string()
-    .regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
-
+  
   message: z
     .string()
     .min(1, "message cannot be empty")

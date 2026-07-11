@@ -1,11 +1,11 @@
 const {
   saveMessage,
-  getReceiver,
   handleSend,
   validateMessage,
   validateReceiver,
   checkConversationState,
   createConversation,
+  getReciver,
 } = require("../services/message.service");
 
 function addUserToOnlineUsers(ws, onlineUsers) {
@@ -31,22 +31,23 @@ async function routeMessage(ws, msg, onlineUsers) {
     return;
   }
 
-  const receiverValidation = await validateReceiver(msg.receiverId);
-
-  if (!receiverValidation.success) {
-    ws.send(
-      JSON.stringify({
-        type: "ERROR",
-        message: receiverValidation.error,
-      }),
-    );
-    return;
-  }
-
   switch (msg.type) {
-    case "MESSAGE": {
-      const result = validateMessage(msg);
+    case "PING":
+      ws.send(JSON.stringify({ type: "PONG" }));
+      break;
 
+    case "MESSAGE": {
+      const receiverValidation = await validateReceiver(msg.payload.receiverId);
+      if (!receiverValidation.success) {
+        ws.send(
+          JSON.stringify({
+            type: "ERROR",
+            message: receiverValidation.error,
+          }),
+        );
+        return;
+      }
+      const result = validateMessage(msg.payload);
       if (!result.success) {
         ws.send(
           JSON.stringify({
@@ -56,13 +57,12 @@ async function routeMessage(ws, msg, onlineUsers) {
         );
         return;
       }
-
-      handleMessage(ws, result.data, onlineUsers);
+      handleMessage(ws, msg.payload, onlineUsers);
       break;
     }
 
     case "STATUS": {
-      if (!msg.messageId) {
+      if (!msg.payload.messageId) {
         ws.send(
           JSON.stringify({
             type: "ERROR",
@@ -120,20 +120,20 @@ async function handleMessage(ws, msg, onlineUsers) {
   try {
     if (!ws || !ws.userId) return;
     if (!onlineUsers.has(ws.userId)) return;
-    let conversation=msg.conversationId;
+    let conversation = msg.conversationId;
     if (conversation) {
-      const conversationExist=checkConversationExisted(conversation);
+      const conversationExist = await  checkConversationExisted(conversation);
       if (conversationExist == null) {
-        conversation = createConversation(msg, ws.userId);
+        conversation = await createConversation(msg, ws.userId);
       }
     } else {
-      conversation = checkConversationState(ws.userId, msg.id);
-      if (conversation == null) {
-        conversation = createConversation(msg, ws.userId);
+      conversation = await checkConversationState(ws.userId, msg.receiverId);
+      if (conversation === null) {
+        conversation =await  createConversation(msg, ws.userId);
       }
     }
-    await saveMessage(conversation,msg, ws.userId);
-    const receiver = getReceiver(msg, onlineUsers);
+    await saveMessage(conversation, msg, ws.userId);
+    const receiver =  getReciver(msg, onlineUsers);
     if (receiver) handleSend(receiver, msg);
   } catch (error) {
     console.error("handleMessage error:", error);

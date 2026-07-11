@@ -1,6 +1,6 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-const WS_URL = "ws://localhost:8080";
+const WS_URL = "ws://localhost:5000";
 
 const useChatSocket = () => {
   const wsRef = useRef(null);
@@ -13,6 +13,7 @@ const useChatSocket = () => {
   const attemptRef = useRef(0);
   const delayRef = useRef(0);
   const reconnectTimeoutRef = useRef(null);
+  const lastPongRef = useRef(Date.now());
   const pingIntervalRef = useRef(null);
 
   const connectWS = useCallback(() => {
@@ -26,13 +27,19 @@ const useChatSocket = () => {
       reconnectRef.current = true;
       clearTimeout(reconnectTimeoutRef.current);
       attemptRef.current = 0;
+      lastPongRef.current = Date.now();
 
       console.log("Connected");
       pingIntervalRef.current = setInterval(() => {
+        if (Date.now() - lastPongRef.current > 10000) {
+            ws.close();   
+            return;
+        }
         if (wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ type: "ping" }));
+          wsRef.current.send(JSON.stringify({ type: "PING" }));
         }
       }, 3000);
+
       setConnectionStatus("connected");
     };
     ws.onmessage = (event) => {
@@ -40,14 +47,13 @@ const useChatSocket = () => {
         const data = JSON.parse(event.data);
         console.log("Incoming:", data);
         switch (data.type) {
+          case "PONG":
+            console.log("pong");
+            lastPongRef.current = Date.now();
+            break;
           case "NEW_MESSAGE":
             handlNewMessage(data);
             break;
-
-          case "CHAT_HISTORY":
-            handleHistory(data);
-            break;
-
           default:
             console.log("Unknown event");
         }
@@ -88,9 +94,7 @@ const useChatSocket = () => {
       const jitter = Math.random() * 1000;
       return Math.min(base * 2 ** attempt + jitter, max);
     };
-    const handleHistory=(data)=>{
-      setMessages(data.payload);
-    };
+    
     const handlNewMessage=(data)=>{
       setMessages((prev) => [...prev, data.payload]);
     }
@@ -106,45 +110,22 @@ const useChatSocket = () => {
     };
   }, [connectWS]);
 
-  const sendMessage = (input) => {
-    if (!input.trim()) return;
+  const sendMessage = (messageData) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       console.log("Socket not connected");
       return;
     }
-    const messageData = {
-      type: "SEND_MESSAGE",
-      payload: {
-        receiverId: selectedChat,
-        content: input,
-        timestamp: new Date(),
-        conversationId:conversationId
-      },
-    };
     wsRef.current.send(JSON.stringify(messageData));
-    // optimistic update
     setMessages((prev) => [
       ...prev,
-      {
-        ...messageData.payload,
-      },
+      {...messageData.payload,},
     ]);
-    setInput("");
+    console.log(setMessages+"hi");
+    
   };
 
-  const openChat = (chatId) => {
-    setSelectedChat(chatId);
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(
-        JSON.stringify({
-          type: "GET_CHAT_HISTORY",
-          payload: { chatId },
-        }),
-      );
-    }
-  };
-
-  return {messages,conversationId};
+  
+  return {messages,sendMessage};
 };
 
 export default useChatSocket;

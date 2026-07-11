@@ -20,7 +20,7 @@ const UserData = lazy(() => import("../pages/userMenu/profile/UserData"));
 const MentorRegister = lazy(() => import("../pages/role/mentor/MentorRegister"));
 const MentorApplication = lazy(() => import("../pages/userMenu/mentorApplication/MentorApplication"));
 const AllApplicaton = lazy(() => import("../pages/allMentorApplication/AllApplicaton"));
-const MessagePage=lazy(()=>import ( "../pages/message/messagePage/MessagePage"));
+const MessagePage=lazy(()=>import ( "../pages/message/MessagePage"));
 const LinkRoutes = () => {
   return (
     <Router>

@@ -21,6 +21,8 @@ export default function webSocketConnection(server) {
       ws.on("message", (raw) => {
         try {
           const msg = JSON.parse(raw);
+          console.log("PARSED:", msg);
+
           routeMessage(ws, msg, onlineUsers);
         } catch {
           ws.send(
