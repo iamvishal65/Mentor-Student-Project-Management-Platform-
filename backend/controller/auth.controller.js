@@ -7,7 +7,6 @@ const {
 const { createToken } = require("../utils/token.util");
 const loginSchema = require("../validators/loginSchema");
 
-
 const userSchema = require("../validators/userSchema");
 
 async function Register(req, res) {
@@ -25,7 +24,7 @@ async function Register(req, res) {
     }
     const data = validateUser.data;
     const user = await createUser(data);
-    await createNewProfile(data,user._id);
+    await createNewProfile(data, user._id);
     if (user.error) {
       return res.status(400).json({ message: user.error, success: false });
     }
@@ -60,10 +59,12 @@ async function Login(req, res) {
     }
     const token = createToken(user);
 
+    const isProduction = process.env.NODE_ENV === "production";
+
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
