@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 //update
-import MentorApplicationStructure from "./mentorApplicationStructure";
+import MentorApplicationStructure from "./MentorApplicationStructure";
 
 const MentorApplication = () => {
   const [applicationStatus, setApplicationStatus] = useState(null);
