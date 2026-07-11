@@ -13,6 +13,7 @@ const CheckLogin = () => {
   useEffect(() => {
     async function loginCheck() {
       try {
+        console.log(import.meta.env.VITE_API_URL);
         const res = await axiosInstance.get("/api/auth/logincheck");
 
         if (res.data.loggedIn) {
