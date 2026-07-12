@@ -1,111 +1,116 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
 const WS_URL = "ws://localhost:5000";
 
-const useChatSocket = () => {
+const useChatSocket = (onMessage) => {
   const wsRef = useRef(null);
-  const [messages, setMessages] = useState([]);
+
   const [connectionStatus, setConnectionStatus] = useState("connecting");
-  
 
   const reconnectRef = useRef(true);
-  const maxReconnectionAttempt = 10;
-  const attemptRef = useRef(0);
-  const delayRef = useRef(0);
   const reconnectTimeoutRef = useRef(null);
-  const lastPongRef = useRef(Date.now());
   const pingIntervalRef = useRef(null);
+  const lastPongRef = useRef(Date.now());
+
+  const attemptRef = useRef(0);
+
+  const MAX_RECONNECT_ATTEMPTS = 10;
+  const BASE_DELAY = 500;
+  const MAX_DELAY = 30000;
+
+  const getBackoffDelay = (attempt) => {
+    const jitter = Math.random() * 1000;
+    return Math.min(BASE_DELAY * 2 ** attempt + jitter, MAX_DELAY);
+  };
 
   const connectWS = useCallback(() => {
-    if (!navigator.onLine) {
-      console.log("offline");
-      return;
-    }
+    if (!navigator.onLine) return;
+
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
+
     ws.onopen = () => {
-      reconnectRef.current = true;
-      clearTimeout(reconnectTimeoutRef.current);
+      console.log("WebSocket Connected");
+
       attemptRef.current = 0;
       lastPongRef.current = Date.now();
 
-      console.log("Connected");
+      setConnectionStatus("connected");
+
+      clearInterval(pingIntervalRef.current);
+
       pingIntervalRef.current = setInterval(() => {
         if (Date.now() - lastPongRef.current > 10000) {
-            ws.close();   
-            return;
+          ws.close();
+          return;
         }
-        if (wsRef.current.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ type: "PING" }));
+
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "PING" }));
         }
       }, 3000);
-
-      setConnectionStatus("connected");
     };
+
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log("Incoming:", data);
+
         switch (data.type) {
           case "PONG":
-            console.log("pong");
             lastPongRef.current = Date.now();
             break;
+
           case "NEW_MESSAGE":
-            handlNewMessage(data);
+            onMessage?.(data.payload);
             break;
+
           default:
-            console.log("Unknown event");
+            console.log("Unknown WS Event:", data.type);
         }
       } catch (err) {
         console.error(err);
       }
     };
+
     ws.onerror = (err) => {
-      console.log("WS Error", err);
+      console.error(err);
       setConnectionStatus("error");
     };
+
     ws.onclose = () => {
-       if (wsRef.current !== ws) return;
+      if (wsRef.current !== ws) return;
+
       clearInterval(pingIntervalRef.current);
+
       if (!reconnectRef.current) return;
+
       if (!navigator.onLine) return;
-      if (attemptRef.current >= maxReconnectionAttempt) return;
-      setConnectionStatus("disconnected");
-      reconnecting();
-    };
-    const reconnecting = () => {
-      if (attemptRef.current >= maxReconnectionAttempt) {
-        console.error("Max reconnection attempts reached.");
+
+      if (attemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
+        console.log("Maximum reconnect attempts reached.");
         return;
       }
-      delayRef.current = getBackoffDelay(attemptRef.current);
-      console.log(`Reconnecting in ${delayRef.current}ms`);
 
-      clearTimeout(reconnectTimeoutRef.current);
+      setConnectionStatus("disconnected");
+
+      const delay = getBackoffDelay(attemptRef.current);
+
       reconnectTimeoutRef.current = setTimeout(() => {
         attemptRef.current++;
         connectWS();
-      }, delayRef.current);
+      }, delay);
     };
-    const getBackoffDelay = (attempt) => {
-      const base = 500; // 0.5 second
-      const max = 30000; // 30 seconds
-      const jitter = Math.random() * 1000;
-      return Math.min(base * 2 ** attempt + jitter, max);
-    };
-    
-    const handlNewMessage=(data)=>{
-      setMessages((prev) => [...prev, data.payload]);
-    }
-  }, []);
+  }, [onMessage]);
 
   useEffect(() => {
     connectWS();
+
     return () => {
       reconnectRef.current = false;
+
       clearInterval(pingIntervalRef.current);
       clearTimeout(reconnectTimeoutRef.current);
+
       wsRef.current?.close();
     };
   }, [connectWS]);
@@ -113,19 +118,18 @@ const useChatSocket = () => {
   const sendMessage = (messageData) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
       console.log("Socket not connected");
-      return;
+      return false;
     }
+
     wsRef.current.send(JSON.stringify(messageData));
-    setMessages((prev) => [
-      ...prev,
-      {...messageData.payload,},
-    ]);
-    console.log(setMessages+"hi");
-    
+
+    return true;
   };
 
-  
-  return {messages,sendMessage};
+  return {
+    sendMessage,
+    connectionStatus,
+  };
 };
 
 export default useChatSocket;

@@ -1,55 +1,110 @@
-import React from "react";
-import axiosInstance from "../../../api/authApi";
-import { useState } from "react";
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-//update
-import MentorApplicationStructure from "./MentorApplicationStructure";
+import { useEffect, useState } from "react";
+import { useRecoilValue } from "recoil";
 
-const MentorApplication = () => {
-  const [applicationStatus, setApplicationStatus] = useState(null);
-  const [nextEligibleAt, setNextEligibleAt] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const res = await axiosInstance.get(
-          "/api/auth/mentor/applicationStatus",
-        );
-        const status = res.data.status;
-        setApplicationStatus(status);
-        if (status === "APPROVED") {
-          navigate("/mentorRegister");
-        }
-        if (status != "NOT APPLIED") {
-          setNextEligibleAt(res.data.nextEligibleAt);
-        }
-      } catch (error) {
-        console.error("Error in fetching application status", error);
-      } finally {
-        setLoading(false);
+import axiosInstance from "../../api/authApi";
+import useChatSocket from "../../hooks/useChat";
+
+import ChatLayout from "../../components/message/ChatLayout";
+
+import { userProfileData } from "../../recoil/ProfileData";
+import { userData } from "../../recoil/UserData";
+
+const MessagePage = () => {
+  const profile = useRecoilValue(userProfileData);
+  const currentUser = useRecoilValue(userData);
+
+  const [conversations, setConversations] = useState([]);
+  const [selectedChat, setSelectedChat] = useState(null);
+
+  // Receive messages from socket
+  const { sendMessage, connectionStatus } = useChatSocket((message) => {
+    setSelectedChat((prev) => {
+      if (!prev) return prev;
+
+      if (prev.conversationId !== message.conversationId) {
+        return prev;
       }
-    };
-    fetchStatus();
-  }, []);
 
-  const applyForMentorRole = async () => {
+      return {
+        ...prev,
+        messages: [...(prev.messages || []), message],
+      };
+    });
+  });
+
+  useEffect(() => {
+    if (!profile?._id) return;
+
+    fetchConversations();
+  }, [profile?._id]);
+
+  async function fetchConversations() {
     try {
-      const res = await axiosInstance.post("/api/auth/mentor/applyForMentor");
-      setApplicationStatus(res.data.status);
-      setNextEligibleAt(res.data.nextEligibleAt);
-    } catch (error) {
-      console.error("Error in applying for mentor", error);
+      const { data } = await axiosInstance.get(
+        `/api/user/message/checkConversation/${profile._id}`
+      );
+
+      if (!data.conversation) {
+        setConversations([]);
+        setSelectedChat(null);
+        return;
+      }
+
+      setConversations([data.conversation]);
+
+      setSelectedChat({
+        ...data.conversation,
+        messages: data.conversation.messages || [],
+      });
+    } catch (err) {
+      console.error(err);
     }
-  };
+  }
+
+  function handleSelectChat(chat) {
+    setSelectedChat(chat);
+  }
+
+  function handleSendMessage(text) {
+    if (!text.trim() || !selectedChat) return;
+
+    const payload = {
+      receiverId: selectedChat.user.user,
+      conversationId: selectedChat.conversationId,
+      message: text,
+      timestamp: new Date(),
+    };
+
+    const success = sendMessage({
+      type: "MESSAGE",
+      payload,
+    });
+
+    if (!success) return;
+
+    // Optimistic update
+    setSelectedChat((prev) => ({
+      ...prev,
+      messages: [
+        ...(prev.messages || []),
+        {
+          ...payload,
+          senderId: currentUser._id,
+        },
+      ],
+    }));
+  }
+
   return (
-    <MentorApplicationStructure
-      applyForMentorRole={applyForMentorRole}
-      loading={loading}
-      applicationStatus={applicationStatus}
-      nextEligibleAt={nextEligibleAt}
+    <ChatLayout
+      chats={conversations}
+      selectedChat={selectedChat}
+      onSelectChat={handleSelectChat}
+      onSendMessage={handleSendMessage}
+      currentUserId={currentUser?._id}
+      connectionStatus={connectionStatus}
     />
   );
 };
-export default MentorApplication;
+
+export default MessagePage;

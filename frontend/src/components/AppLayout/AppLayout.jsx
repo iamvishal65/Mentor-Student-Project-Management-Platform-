@@ -1,17 +1,16 @@
 import { Outlet } from "react-router-dom";
 import Navbar from "../PagesStrucure/NavbarStructure";
 
-const Layout = ({ children }) => {
+const Layout = () => {
   return (
-    <>
-      <Navbar/>
-      {/* pt-16 makes room for the fixed navbar (h-16). Adjust if you change navbar height */}
-      <main className="pt-16 min-h-screen bg-gray-50">
+    <div className="h-screen overflow-hidden">
+      <Navbar />
+
+      <main className="h-[calc(100vh-4rem)] pt-16">
         <Outlet />
       </main>
-    </>
+    </div>
   );
 };
 
 export default Layout;
-
