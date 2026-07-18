@@ -6,7 +6,7 @@ import useChatSocket from "../../hooks/useChat";
 
 import ChatLayout from "../../components/message/ChatLayout";
 
-import { userProfileData } from "../../recoil/ProfileData";
+import { userProfileData } from "../../../recoil/ProfileData";
 import { userData } from "../../recoil/UserData";
 
 const MessagePage = () => {
