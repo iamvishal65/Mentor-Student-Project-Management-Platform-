@@ -7,7 +7,7 @@ import useChatSocket from "../../hooks/useChat";
 import ChatLayout from "../../components/message/ChatLayout";
 
 import { userProfileData } from "../../../recoil/ProfileData";
-import { userData } from "../../recoil/UserData";
+import { userData } from "../../../recoil/UserData";
 
 const MessagePage = () => {
   const profile = useRecoilValue(userProfileData);
