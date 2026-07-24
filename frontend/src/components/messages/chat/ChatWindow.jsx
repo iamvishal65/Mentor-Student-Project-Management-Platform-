@@ -4,12 +4,8 @@ import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
 import EmptyConversation from "./EmptyConversation";
 
-const ChatWindow = ({
-  chat,
-  currentUserId,
-  onSendMessage,
-  onBack,
-}) => {
+const ChatWindow = ({ chat, currentUserId, onSendMessage, onBack }) => {
+  console.log("ChatWindow Chat:", chat);
   if (!chat) {
     return <EmptyConversation />;
   }
@@ -17,10 +13,7 @@ const ChatWindow = ({
   return (
     <div className="flex flex-col h-full w-full bg-white">
       {/* Header */}
-      <ChatHeader
-        chat={chat}
-        onBack={onBack}
-      />
+      <ChatHeader chat={chat} onBack={onBack} />
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto">
@@ -31,9 +24,7 @@ const ChatWindow = ({
       </div>
 
       {/* Input */}
-      <ChatInput
-        onSendMessage={onSendMessage}
-      />
+      <ChatInput onSendMessage={onSendMessage} />
     </div>
   );
 };

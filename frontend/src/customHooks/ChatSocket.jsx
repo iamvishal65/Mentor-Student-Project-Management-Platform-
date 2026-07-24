@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const WS_URL = "ws://localhost:5000";
 
-const useChatSocket = (onMessage) => {
+const useChatSocket = ({ onMessage, onStatus, onTyping, onNotification }) => {
   const wsRef = useRef(null);
 
   const [connectionStatus, setConnectionStatus] = useState("connecting");
@@ -24,13 +24,16 @@ const useChatSocket = (onMessage) => {
   };
 
   const connectWS = useCallback(() => {
-    if (!navigator.onLine) return;
+    if (!navigator.onLine) {
+      setConnectionStatus("offline");
+      return;
+    }
 
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log("WebSocket Connected");
+      console.log("✅ WebSocket Connected");
 
       attemptRef.current = 0;
       lastPongRef.current = Date.now();
@@ -41,6 +44,7 @@ const useChatSocket = (onMessage) => {
 
       pingIntervalRef.current = setInterval(() => {
         if (Date.now() - lastPongRef.current > 10000) {
+          console.warn("Heartbeat timeout. Closing socket...");
           ws.close();
           return;
         }
@@ -54,7 +58,7 @@ const useChatSocket = (onMessage) => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-
+        console.log("WS Received:", data);
         switch (data.type) {
           case "PONG":
             lastPongRef.current = Date.now();
@@ -64,16 +68,32 @@ const useChatSocket = (onMessage) => {
             onMessage?.(data.payload);
             break;
 
+          case "STATUS":
+            onStatus?.(data.payload);
+            break;
+
+          case "TYPING":
+            onTyping?.(data.payload);
+            break;
+
+          case "NOTIFICATION":
+            onNotification?.(data.payload);
+            break;
+
+          case "ERROR":
+            console.error("WebSocket Error:", data.message || data.errors);
+            break;
+
           default:
-            console.log("Unknown WS Event:", data.type);
+            console.warn("Unknown WS Event:", data);
         }
       } catch (err) {
-        console.error(err);
+        console.error("Failed to parse WebSocket message:", err);
       }
     };
 
     ws.onerror = (err) => {
-      console.error(err);
+      console.error("WebSocket Error:", err);
       setConnectionStatus("error");
     };
 
@@ -84,14 +104,18 @@ const useChatSocket = (onMessage) => {
 
       if (!reconnectRef.current) return;
 
-      if (!navigator.onLine) return;
-
-      if (attemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
-        console.log("Maximum reconnect attempts reached.");
+      if (!navigator.onLine) {
+        setConnectionStatus("offline");
         return;
       }
 
-      setConnectionStatus("disconnected");
+      if (attemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
+        console.error("Maximum reconnect attempts reached.");
+        setConnectionStatus("failed");
+        return;
+      }
+
+      setConnectionStatus("reconnecting");
 
       const delay = getBackoffDelay(attemptRef.current);
 
@@ -100,9 +124,10 @@ const useChatSocket = (onMessage) => {
         connectWS();
       }, delay);
     };
-  }, [onMessage]);
+  }, [onMessage, onStatus, onTyping, onNotification]);
 
   useEffect(() => {
+    reconnectRef.current = true;
     connectWS();
 
     return () => {
@@ -115,20 +140,20 @@ const useChatSocket = (onMessage) => {
     };
   }, [connectWS]);
 
-  const sendMessage = (messageData) => {
+  const sendMessage = useCallback((data) => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      console.log("Socket not connected");
+      console.warn("Socket not connected.");
       return false;
     }
 
-    wsRef.current.send(JSON.stringify(messageData));
-
+    wsRef.current.send(JSON.stringify(data));
     return true;
-  };
+  }, []);
 
   return {
     sendMessage,
     connectionStatus,
+    socket: wsRef.current,
   };
 };
 

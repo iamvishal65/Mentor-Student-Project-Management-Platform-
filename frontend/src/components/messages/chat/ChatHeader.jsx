@@ -3,10 +3,8 @@ import { ArrowLeft, MoreVertical } from "lucide-react";
 
 const ChatHeader = ({ chat, onBack }) => {
   console.log(chat);
-  
-  const fullName = `${chat?.user?.Name || ""} ${
-    chat?.user?.lastName || ""
-  }`.trim();
+
+  const fullName = chat?.user?.name || "Unknown User";
 
   const initials = fullName
     .split(" ")
@@ -41,13 +39,9 @@ const ChatHeader = ({ chat, onBack }) => {
 
         {/* User Name */}
         <div>
-          <h2 className="font-semibold">
-            {fullName || "Unknown User"}
-          </h2>
+          <h2 className="font-semibold">{fullName || "Unknown User"}</h2>
 
-          <p className="text-sm text-gray-500">
-            Conversation
-          </p>
+          <p className="text-sm text-gray-500">Conversation</p>
         </div>
       </div>
 

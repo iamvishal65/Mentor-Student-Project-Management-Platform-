@@ -2,7 +2,7 @@ import React from "react";
 import axiosInstance from "../../../api/authApi";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-export default function useLogin (){
+export default function useLogin() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const handleSubmit = async (data) => {
@@ -14,13 +14,14 @@ export default function useLogin (){
         throw new Error(res.data.message);
       }
       setLoading(false);
-      navigate('/');
+      navigate("/");
     } catch (error) {
-        console.error("Error:", error.res?.data || error.message);
-    }
-    finally{
-        setLoading(false);
+      console.error("Status:", error.response?.status);
+      console.error("Response:", error.response?.data);
+      console.error("Message:", error.message);
+    } finally {
+      setLoading(false);
     }
   };
-  return {handleSubmit,loading};
-};
+  return { handleSubmit, loading };
+}

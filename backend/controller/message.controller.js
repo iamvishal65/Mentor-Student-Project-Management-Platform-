@@ -5,8 +5,13 @@ const {
   validateReceiver,
   checkConversationState,
   createConversation,
+  checkConversationExist,
   getReciver,
+  changeMessageStatus,
 } = require("../services/message.service");
+
+const conversationModel = require("../models/conversation.model");
+const messageModel = require("../models/Message.model.cjs");
 
 function addUserToOnlineUsers(ws, onlineUsers) {
   const userId = ws.userId;
@@ -22,92 +27,53 @@ function addUserToOnlineUsers(ws, onlineUsers) {
 
 async function routeMessage(ws, msg, onlineUsers) {
   if (!msg || typeof msg.type !== "string") {
-    ws.send(
+    return ws.send(
       JSON.stringify({
         type: "ERROR",
         message: "Invalid message format",
       }),
     );
-    return;
   }
 
   switch (msg.type) {
     case "PING":
-      ws.send(JSON.stringify({ type: "PONG" }));
-      break;
+      return ws.send(JSON.stringify({ type: "PONG" }));
 
     case "MESSAGE": {
       const receiverValidation = await validateReceiver(msg.payload.receiverId);
+
       if (!receiverValidation.success) {
-        ws.send(
+        return ws.send(
           JSON.stringify({
             type: "ERROR",
             message: receiverValidation.error,
           }),
         );
-        return;
       }
-      const result = validateMessage(msg.payload);
-      if (!result.success) {
-        ws.send(
+
+      const validation = validateMessage(msg.payload);
+
+      if (!validation.success) {
+        return ws.send(
           JSON.stringify({
             type: "ERROR",
-            errors: result.errors,
+            errors: validation.errors,
           }),
         );
-        return;
-      }
-      handleMessage(ws, msg.payload, onlineUsers);
-      break;
-    }
-
-    case "STATUS": {
-      if (!msg.payload.messageId) {
-        ws.send(
-          JSON.stringify({
-            type: "ERROR",
-            message: "messageId is required for status",
-          }),
-        );
-        return;
       }
 
-      handleStatus(ws, msg, onlineUsers);
-      break;
+      await handleMessage(ws, validation.data, onlineUsers);
+      return;
     }
 
-    case "TYPING": {
-      if (!msg.messageId) {
-        ws.send(
-          JSON.stringify({
-            type: "ERROR",
-            message: "messageId is required for typing",
-          }),
-        );
-        return;
-      }
+    case "STATUS":
+      return await handleStatus(ws, msg.payload, onlineUsers);
 
-      handleTyping(ws, msg, onlineUsers);
-      break;
-    }
-
-    case "NOTIFICATION": {
-      if (!msg.messageId) {
-        ws.send(
-          JSON.stringify({
-            type: "ERROR",
-            message: "messageId is required for notification",
-          }),
-        );
-        return;
-      }
-
-      handleNotification(ws, msg, onlineUsers);
-      break;
-    }
+    case "TYPING":
+      return await handleTyping(ws, msg.payload, onlineUsers);
 
     default:
-      ws.send(
+      return ws.send(
         JSON.stringify({
           type: "ERROR",
           message: `Unknown message type: ${msg.type}`,
@@ -118,46 +84,90 @@ async function routeMessage(ws, msg, onlineUsers) {
 
 async function handleMessage(ws, msg, onlineUsers) {
   try {
-    if (!ws || !ws.userId) return;
-    if (!onlineUsers.has(ws.userId)) return;
-    let conversation = msg.conversationId;
-    if (conversation) {
-      const conversationExist = await  checkConversationExisted(conversation);
-      if (conversationExist == null) {
-        conversation = await createConversation(msg, ws.userId);
+    if (!ws?.userId) return;
+
+    let conversationId = msg.conversationId;
+
+    if (conversationId) {
+      const existing = await checkConversationExist(conversationId);
+
+      conversationId = existing;
+
+      if (!conversationId) {
+        conversationId = await createConversation(msg, ws.userId);
       }
     } else {
-      conversation = await checkConversationState(ws.userId, msg.receiverId);
-      if (conversation === null) {
-        conversation =await  createConversation(msg, ws.userId);
+      conversationId = await checkConversationState(ws.userId, msg.receiverId);
+
+      if (!conversationId) {
+        conversationId = await createConversation(msg, ws.userId);
       }
     }
-    await saveMessage(conversation, msg, ws.userId);
-    const receiver =  getReciver(msg, onlineUsers);
-    if (receiver) handleSend(receiver, msg);
-  } catch (error) {
-    console.error("handleMessage error:", error);
+
+    const savedMessage = await saveMessage(conversationId, msg, ws.userId);
+
+    // Send to sender (all tabs)
+    const senderSockets = onlineUsers.get(ws.userId);
+
+    senderSockets?.forEach((socket) => {
+      handleSend(socket, {
+        type: "NEW_MESSAGE",
+        payload: savedMessage,
+      });
+    });
+
+    // Send to receiver (all tabs)
+    const receiverSockets = getReciver(msg, onlineUsers);
+
+    receiverSockets?.forEach((socket) => {
+      handleSend(socket, {
+        type: "NEW_MESSAGE",
+        payload: savedMessage,
+      });
+    });
+    console.log(savedMessage);
+console.log("createdAt:", savedMessage.createdAt);
+console.log("timestamp:", savedMessage.timestamp);
+  } catch (err) {
+    console.error("handleMessage:", err);
+
     ws.send(
-      JSON.stringify({ type: "ERROR", message: "Failed to send message" }),
+      JSON.stringify({
+        type: "ERROR",
+        message: "Failed to send message",
+      }),
     );
   }
 }
 
-async function handleStatus(ws, msg, onlineUsers) {
+async function handleStatus(ws, payload, onlineUsers) {
   try {
-    await changeMessageStatus(msg.messageId, ws.userId);
-    const receiver = getReceiver(msg, onlineUsers);
-    if (!receiver) return;
+    await changeMessageStatus(payload.messageId, ws.userId);
 
-    handleSend(receiver, {
-      type: status,
-      messageId: msg.messageId,
-      readBy: ws.userId,
+    const receivers = getReciver(
+      {
+        receiverId: payload.receiverId,
+      },
+      onlineUsers,
+    );
+
+    receivers?.forEach((socket) => {
+      handleSend(socket, {
+        type: "STATUS",
+        payload: {
+          messageId: payload.messageId,
+          readBy: ws.userId,
+        },
+      });
     });
-  } catch (error) {
-    console.error("handleStatus error:", error);
+  } catch (err) {
+    console.error(err);
+
     ws.send(
-      JSON.stringify({ type: "ERROR", message: "Failed to update status" }),
+      JSON.stringify({
+        type: "ERROR",
+        message: "Failed to update status",
+      }),
     );
   }
 }
@@ -175,20 +185,33 @@ function handleDisconnect(ws, onlineUsers) {
   }
 }
 
-async function handleTyping(ws, msg, onlineUsers) {
+async function handleTyping(ws, payload, onlineUsers) {
   try {
-    const receiver = getReceiver(msg, onlineUsers);
-    if (!receiver) return;
+    const receivers = getReciver(
+      {
+        receiverId: payload.receiverId,
+      },
+      onlineUsers,
+    );
 
-    handleSend(receiver, {
-      type: "TYPING",
-      messageId: msg.messageId,
-      readBy: ws.userId,
+    receivers?.forEach((socket) => {
+      handleSend(socket, {
+        type: "TYPING",
+        payload: {
+          conversationId: payload.conversationId,
+          typing: payload.typing,
+          senderId: ws.userId,
+        },
+      });
     });
-  } catch (error) {
-    console.error("handleTyping error:", error);
+  } catch (err) {
+    console.error(err);
+
     ws.send(
-      JSON.stringify({ type: "ERROR", message: "Failed to send typing" }),
+      JSON.stringify({
+        type: "ERROR",
+        message: "Failed to send typing",
+      }),
     );
   }
 }
@@ -249,24 +272,33 @@ async function checkConversation(req, res) {
     const userId = req.token.id;
     const otherUserId = req.params.otherUserId;
 
-    const conversation = await checkConversationState(userId, otherUserId);
+    const conversationId = await checkConversationState(userId, otherUserId);
 
-    if (!conversation) {
+    if (!conversationId) {
       return res.status(200).json({
         conversationExists: false,
         conversation: null,
-        message: "Conversation not created yet",
       });
     }
 
+    const conversation = await conversationModel
+      .findById(conversationId)
+      .populate("participants", "name userName");
+
+    const messages = await messageModel
+      .find({ conversationId })
+      .sort({ createdAt: 1 });
+
     return res.status(200).json({
       conversationExists: true,
-      conversation,
-      message: "Conversation found",
+      conversation: {
+        ...conversation.toObject(),
+        messages,
+      },
     });
-  } catch (error) {
-    return res.status(500).json({
-      message: error.message,
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
     });
   }
 }

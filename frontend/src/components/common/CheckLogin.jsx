@@ -1,57 +1,68 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useSetRecoilState } from "recoil";
 import axiosInstance from "../../api/authApi";
-import { useRecoilState } from "recoil";
 import { userData } from "../../recoil/UserData";
 
-const CheckLogin = () => {
+export default function CheckLogin() {
   const [checking, setChecking] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [, setData] = useRecoilState(userData);
+
+  const setUser = useSetRecoilState(userData);
   const location = useLocation();
 
   useEffect(() => {
-    async function loginCheck() {
-      try {
-        console.log(import.meta.env.VITE_API_URL);
-        const res = await axiosInstance.get("/api/auth/logincheck");
+    let mounted = true;
 
-        if (res.data.loggedIn) {
-          const user = res.data.user;
-          setData({
-            ...user,
-            roles: user.roles || [],
-          });
+    const checkLogin = async () => {
+      try {
+        const { data } = await axiosInstance.get("/api/auth/logincheck");
+
+        if (!mounted) return;
+
+        if (data.loggedIn) {
           setLoggedIn(true);
+
+          setUser({
+            ...data.user,
+            roles: data.user.roles || [],
+          });
         } else {
           setLoggedIn(false);
-          setData(null);
+          setUser(null);
         }
-      } catch (err) {
-        console.error("Login check failed:", err);
-        setLoggedIn(false);
-        setData(null);
-      } finally {
-        setChecking(false);
-      }
-    }
+      } catch (error) {
+        if (!mounted) return;
 
-    loginCheck();
-  }, [setData]);
+        console.error(error);
+        setLoggedIn(false);
+        setUser(null);
+      } finally {
+        if (mounted) setChecking(false);
+      }
+    };
+
+    checkLogin();
+
+    return () => {
+      mounted = false;
+    };
+  }, [setUser]);
 
   if (checking) {
-    return <p>⏳ Checking login...</p>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        Checking Login...
+      </div>
+    );
   }
 
   if (
     !loggedIn &&
-    location.pathname !== "/login" &&
-    location.pathname !== "/register"
+    !["/login", "/register"].includes(location.pathname)
   ) {
     return <Navigate to="/register" replace />;
   }
 
   return <Outlet />;
-};
-
-export default CheckLogin;
+}
