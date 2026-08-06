@@ -3,7 +3,7 @@ import MessageBubble from "./MessageBubble";
 
 const MessageList = ({ messages = [], currentUserId }) => {
   const bottomRef = useRef(null);
-  console.log("MessageList:", messages);
+  console.log("First message:", messages[0]);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
       behavior: "smooth",

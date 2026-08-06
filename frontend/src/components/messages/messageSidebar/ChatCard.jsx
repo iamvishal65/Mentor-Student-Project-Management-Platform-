@@ -12,7 +12,7 @@ const ChatCard = ({ chat, selected, onSelect }) => {
       {chat?.user?.profilePicture ? (
         <img
           src={chat.user.profilePicture}
-          alt={chat.user.name}
+          alt={chat.user.name || chat.user.Name}
           className="w-12 h-12 rounded-full object-cover"
         />
       ) : (

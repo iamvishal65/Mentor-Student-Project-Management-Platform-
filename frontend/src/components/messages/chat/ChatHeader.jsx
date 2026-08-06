@@ -4,8 +4,7 @@ import { ArrowLeft, MoreVertical } from "lucide-react";
 const ChatHeader = ({ chat, onBack }) => {
   console.log(chat);
 
-  const fullName = chat?.user?.name || "Unknown User";
-
+  const fullName = chat?.user?.name || chat?.user?.Name || "Unknown User";
   const initials = fullName
     .split(" ")
     .map((word) => word[0])

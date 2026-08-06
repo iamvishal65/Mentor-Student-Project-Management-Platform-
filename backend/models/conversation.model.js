@@ -6,6 +6,7 @@ const conversationSchema = new mongoose.Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "userData",
+        required: true,
       },
     ],
 
@@ -15,19 +16,16 @@ const conversationSchema = new mongoose.Schema(
     },
 
     lastMessage: {
-      text: String,
-      sender: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "userData",
-      },
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-const conversationModel = mongoose.model(
-  "conversation",
-  conversationSchema
-);
+// Multikey index
+conversationSchema.index({ participants: 1 });
+
+const conversationModel = mongoose.model("conversation", conversationSchema);
 
 module.exports = conversationModel;

@@ -14,26 +14,30 @@ async function saveMessage(conversationId, msg, senderId) {
     senderId,
     conversationId,
     message: msg.message,
+    messageType: msg.messageType || "text",
   });
 
-  await conversationModel.findByIdAndUpdate(conversationId, {
-    lastMessage: {
-      _id: newMessage._id,
-      text: newMessage.message,
-      sender: senderId,
-      createdAt: newMessage.createdAt,
+  await conversationModel.findByIdAndUpdate(
+    conversationId,
+    {
+      lastMessage: newMessage._id,
     },
-  });
+    {
+      timestamps: true, // updates updatedAt
+    },
+  );
+
   const message = await messageModel
     .findById(newMessage._id)
     .populate("senderId", "_id name userName");
+
   return message;
 }
 
 async function validateReceiver(id) {
   try {
+    console.log("Receiver ID:", id);
     const user = await userModel.findById(id);
-
     console.log("Found:", user);
 
     if (!user) {
@@ -68,7 +72,7 @@ async function validateReceiver(id) {
   }
 }
 
-function getReciver(msg, onlineUsers) {
+function getReceiver(msg, onlineUsers) {
   const sockets = onlineUsers.get(msg.receiverId);
 
   if (!sockets || sockets.size === 0) {
@@ -149,7 +153,7 @@ module.exports = {
   saveMessage,
   validateReceiver,
   validateMessage,
-  getReciver,
+  getReceiver,
   sendError,
   checkConversationState,
   createConversation,

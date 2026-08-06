@@ -3,7 +3,7 @@ const { z } = require("zod");
 const sendMessageSchema = z.object({
   receiverId: z.string(),
 
-  conversationId: z.string().optional(),
+  conversationId: z.string().nullable().optional(),
 
   message: z
     .string()

@@ -7,6 +7,7 @@ async function checkStudent(userId) {
 async function newStudent({
   enrollment_number,
   admissionYear,
+  
 },userId) {
   const check = await checkStudent(userId);
   if (check) {

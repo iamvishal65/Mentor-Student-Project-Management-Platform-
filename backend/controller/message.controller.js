@@ -6,7 +6,7 @@ const {
   checkConversationState,
   createConversation,
   checkConversationExist,
-  getReciver,
+  getReceiver,
   changeMessageStatus,
 } = require("../services/message.service");
 
@@ -40,6 +40,14 @@ async function routeMessage(ws, msg, onlineUsers) {
       return ws.send(JSON.stringify({ type: "PONG" }));
 
     case "MESSAGE": {
+      if (!msg.payload) {
+        return ws.send(
+          JSON.stringify({
+            type: "ERROR",
+            message: "Payload is required",
+          }),
+        );
+      }
       const receiverValidation = await validateReceiver(msg.payload.receiverId);
 
       if (!receiverValidation.success) {
@@ -106,28 +114,30 @@ async function handleMessage(ws, msg, onlineUsers) {
 
     const savedMessage = await saveMessage(conversationId, msg, ws.userId);
 
-    // Send to sender (all tabs)
+    const payload = {
+      message: savedMessage,
+      receiverId: msg.receiverId,
+    };
+
+    // Send to sender
     const senderSockets = onlineUsers.get(ws.userId);
 
     senderSockets?.forEach((socket) => {
       handleSend(socket, {
         type: "NEW_MESSAGE",
-        payload: savedMessage,
+        payload,
       });
     });
 
-    // Send to receiver (all tabs)
-    const receiverSockets = getReciver(msg, onlineUsers);
+    // Send to receiver
+    const receiverSockets = getReceiver(msg, onlineUsers);
 
     receiverSockets?.forEach((socket) => {
       handleSend(socket, {
         type: "NEW_MESSAGE",
-        payload: savedMessage,
+        payload,
       });
     });
-    console.log(savedMessage);
-console.log("createdAt:", savedMessage.createdAt);
-console.log("timestamp:", savedMessage.timestamp);
   } catch (err) {
     console.error("handleMessage:", err);
 
@@ -144,7 +154,7 @@ async function handleStatus(ws, payload, onlineUsers) {
   try {
     await changeMessageStatus(payload.messageId, ws.userId);
 
-    const receivers = getReciver(
+    const receivers = getReceiver(
       {
         receiverId: payload.receiverId,
       },
@@ -187,7 +197,7 @@ function handleDisconnect(ws, onlineUsers) {
 
 async function handleTyping(ws, payload, onlineUsers) {
   try {
-    const receivers = getReciver(
+    const receivers = getReceiver(
       {
         receiverId: payload.receiverId,
       },
@@ -218,7 +228,7 @@ async function handleTyping(ws, payload, onlineUsers) {
 
 async function recentChats(req, res) {
   try {
-    const userId = req.user.id;
+    const userId = req.token.id;
     const limit = Math.min(parseInt(req.query.limit || "20", 10), 50);
 
     const cursorTime = req.query.cursorTime;
@@ -231,24 +241,33 @@ async function recentChats(req, res) {
 
     if (cursorTime && cursorId) {
       filter.$or = [
-        { "lastMessage.createdAt": { $lt: new Date(cursorTime) } },
         {
-          "lastMessage.createdAt": new Date(cursorTime),
+          updatedAt: { $lt: new Date(cursorTime) },
+        },
+        {
+          updatedAt: new Date(cursorTime),
           _id: { $lt: cursorId },
         },
       ];
     }
 
-    const conversations = await Conversation.find(filter)
-      .sort({ "lastMessage.createdAt": -1, _id: -1 })
+    const conversations = await conversationModel
+      .find(filter)
+      .populate({
+        path: "lastMessage",
+        populate: {
+          path: "senderId",
+          select: "_id name userName",
+        },
+      })
+      .sort({ updatedAt: -1, _id: -1 })
       .limit(limit + 1);
-
     const hasNextPage = conversations.length > limit;
     const items = hasNextPage ? conversations.slice(0, limit) : conversations;
 
     const nextCursor = hasNextPage
       ? {
-          cursorTime: items[items.length - 1].lastMessage.createdAt,
+          cursorTime: items[items.length - 1].updatedAt,
           cursorId: items[items.length - 1]._id,
         }
       : null;
@@ -283,10 +302,24 @@ async function checkConversation(req, res) {
 
     const conversation = await conversationModel
       .findById(conversationId)
-      .populate("participants", "name userName");
+      .populate("participants", "_id name userName")
+      .populate({
+        path: "lastMessage",
+        populate: {
+          path: "senderId",
+          select: "_id name userName",
+        },
+      });
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        message: "Conversation not found",
+      });
+    }
 
     const messages = await messageModel
       .find({ conversationId })
+      .populate("senderId", "_id name userName")
       .sort({ createdAt: 1 });
 
     return res.status(200).json({
@@ -303,10 +336,84 @@ async function checkConversation(req, res) {
   }
 }
 
+async function allConversations(req, res) {
+  try {
+    const userId = req.token.id;
+
+    const conversations = await conversationModel
+      .find({
+        participants: userId,
+      })
+      .populate("participants", "name userName")
+      .populate({
+        path: "lastMessage",
+        populate: {
+          path: "senderId",
+          select: "_id name userName",
+        },
+      })
+      .sort({ updatedAt: -1 });
+
+    const chats = conversations.map((conversation) => {
+      const otherUser = conversation.participants.find(
+        (participant) => participant._id.toString() !== userId.toString(),
+      );
+
+      return {
+        conversationId: conversation._id,
+        user: otherUser,
+        lastMessage: conversation.lastMessage,
+        updatedAt: conversation.updatedAt,
+      };
+    });
+
+    return res.status(200).json({
+      success: true,
+      chats,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch conversations",
+    });
+  }
+}
+
+async function getConversationById(req, res) {
+  const { conversationId } = req.params;
+
+  const conversation = await conversationModel
+    .findById(conversationId)
+    .populate("participants", "_id name userName")
+    .populate({
+      path: "lastMessage",
+      populate: {
+        path: "senderId",
+        select: "_id name userName",
+      },
+    });
+
+  const messages = await messageModel
+    .find({ conversationId })
+    .populate("senderId", "_id name userName")
+    .sort({ createdAt: 1 });
+
+  return res.json({
+    success: true,
+    conversation: {
+      ...conversation.toObject(),
+      messages,
+    },
+  });
+}
 module.exports = {
   handleDisconnect,
+  getConversationById,
   addUserToOnlineUsers,
   routeMessage,
   recentChats,
   checkConversation,
+  allConversations,
 };
