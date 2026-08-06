@@ -46,7 +46,7 @@ async function exchangeToken(req, res) {
 
     saveAccessToken(req.token.id, encryptedToken);
 
-    res.redirect("http://localhost:5173/repos");
+    res.redirect(process.env.CLIENT_URL);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
