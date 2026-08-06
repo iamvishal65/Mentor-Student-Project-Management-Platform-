@@ -1,11 +1,10 @@
-const{ searchProfile}=require("../services/profile.services")
+const { searchProfile } = require("../services/profile.services");
 
 async function search(req, res) {
-  
-    const searchDomain = req.query.scope || "profile";
+  const searchDomain = req.query.scope || "profile";
   try {
     const searchQuery = (req.query.q || "").trim().toLowerCase();
-    
+
     let results = [];
     switch (searchDomain) {
       case "profile":
@@ -33,8 +32,8 @@ async function search(req, res) {
         searchDomain,
       });
     }
-    
-console.log(results);
+
+    console.log(results);
 
     return res.status(200).json({
       success: true,

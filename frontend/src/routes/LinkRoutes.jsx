@@ -13,7 +13,6 @@ const Home = lazy(() => import("../pages/Home/Home"));
 const MyProject = lazy(() => import("../pages/project/myproject/MyProject"));
 const Repos = lazy(() => import("../pages/Repos/Repos"));
 const DataProject = lazy(() => import("../pages/project/data/DatagProject"));
-const StudentRegister = lazy(() => import("../pages/role/student/StudentRegister"));
 const AllProject = lazy(() => import("../pages/project/allProject/AllProject"));
 const Setting = lazy(() => import("../pages/userMenu/setting/Setting"));
 const UserData = lazy(() => import("../pages/userMenu/profile/UserData"));
@@ -35,7 +34,6 @@ const LinkRoutes = () => {
               <Route path="/Profile" element={<Profile/>} />
               <Route path="/dataProject" element={<DataProject />} />
               <Route path="/allProject" element={<AllProject />} />
-              <Route path="/studentRegister" element={<StudentRegister />} />
               <Route path="/settings" element={<Setting />} />
               <Route path="/myProfile" element={<UserData />} />
               <Route path="/mentorRegister" element={<MentorRegister />} />

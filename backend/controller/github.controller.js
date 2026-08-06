@@ -72,9 +72,7 @@ async function checkConnection(req, res) {
   try {
     const userId = req.token.id;
     if (!userId) return res.status(401).json({ message: "invalid token" });
-
     const check = await userAllowed(userId);
-
     if (!check) return res.json({ connected: false });
     else return res.json({ connected: true });
   } catch (err) {
@@ -87,15 +85,12 @@ async function getGithubRepos(req, res) {
   let accessToken;
   try {
     const userId = req.token.id;
-    console.log("hello");
     
     const encryptedTokenObj = await getAccessTokenByUserId(userId);
-console.log(encryptedTokenObj);
     if (!encryptedTokenObj) {
       return res.status(401).json({ message: "GitHub not connected" });
     }
     const { accessTokenEnc, iv, authTag } = encryptedTokenObj;
-console.log(userId+"10");
     if (!accessTokenEnc || !iv || !authTag) {
       return res
         .status(500)

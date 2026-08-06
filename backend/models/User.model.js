@@ -1,11 +1,11 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  name:{
+  name: {
     type: String,
     required: true,
   },
-  userName:{
+  userName: {
     type: String,
     required: true,
     unique: true,
@@ -23,9 +23,16 @@ const userSchema = new mongoose.Schema({
 
   roles: {
     type: [String],
-    enum: ["user", "student", "mentor", "admin"],
-    default: ["user"]
-  }
+    enum: ["user", "mentor", "admin"],
+    default: ["user"],
+  },
+  github: {
+    connected: { type: Boolean, default: false },
+    accessTokenEnc: String,
+    iv: String,
+    authTag: String,
+    connectedAt: Date,
+  },
 });
 
 const userModel = mongoose.model("userData", userSchema);

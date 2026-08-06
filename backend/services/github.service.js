@@ -1,5 +1,5 @@
-const studentModel = require("../models/Student.model");
 const crypto = require("node:crypto");
+const userModel = require("../models/User.model");
 
 const ALGORITHM = "aes-256-gcm";
 const KEY = Buffer.from(process.env.GITHUB_TOKEN_ENC_KEY, "hex"); // 32 bytes
@@ -43,15 +43,12 @@ function decryptToken(encryptedToken, iv, authTag) {
 }
 
 async function userAllowed(userId) {
-  const user = await studentModel.findOne({userId} );
-  console.log(userId+"userallowed");
-  
+  const user = await userModel.findOne({userId} );
   if (!user) {
     const err = new Error("user donnt register as a student");
     err.statusCode = 403;
     throw err;
   }
-  
   if (user.github.connected === false) return false;
   return true;
 }
@@ -59,7 +56,7 @@ async function userAllowed(userId) {
 async function saveAccessToken(userId, encrypted) {
   
   
-  const user = await studentModel.findOneAndUpdate(
+  const user = await userModel.findOneAndUpdate(
   {userId},
     {
       $set: {

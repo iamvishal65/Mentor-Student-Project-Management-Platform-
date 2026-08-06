@@ -48,7 +48,7 @@ async function validateReceiver(id) {
     }
 
     const allowed = user.roles.some((role) =>
-      ["student", "mentor", "admin"].includes(role),
+      ["user", "mentor", "admin"].includes(role),
     );
 
     if (!allowed) {

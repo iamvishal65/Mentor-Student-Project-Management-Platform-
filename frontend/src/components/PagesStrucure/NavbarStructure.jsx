@@ -11,7 +11,7 @@ const commonLinks = [
 ];
 
 const roleLinks = {
-  STUDENT: [{ label: "Messages", path: "/messagePage" }],
+  USER: [{ label: "Messages", path: "/messagePage" }],
   MENTOR: [{ label: "Messages", path: "/messagePage" }],
   ADMIN: [{ label: "All Applications", path: "/allApplication" }],
 };
@@ -27,11 +27,11 @@ const Navbar = () => {
 
   const isAdmin = roles.includes("admin");
   const isMentor = roles.includes("mentor");
-  const isStudent = roles.includes("student");
+  const isUser = roles.includes("user");
 
   const links = [
     ...commonLinks,
-    ...(isStudent ? roleLinks.STUDENT : []),
+    ...(isUser ? roleLinks.USER : []),
     ...(isMentor ? roleLinks.MENTOR : []),
     ...(isAdmin ? roleLinks.ADMIN : []),
   ];

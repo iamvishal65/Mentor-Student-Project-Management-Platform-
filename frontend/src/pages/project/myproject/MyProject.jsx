@@ -11,7 +11,6 @@ const MyProject = () => {
       const res = await axiosInstance.get("/api/auth/github/check");
       if (!res?.data?.connected) {
         const API_URL = import.meta.env.VITE_API_URL;
-
         window.location.href = `${API_URL}/api/auth/github/redirect`;
       } else {
         console.log("Github already connected");
@@ -21,7 +20,7 @@ const MyProject = () => {
         error.status === 403 ||
         error.response?.data?.requiresStudentRegistration
       ) {
-        navigate("/studentRegister");
+        navigate("/register");
         return;
       }
 
