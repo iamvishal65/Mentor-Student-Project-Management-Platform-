@@ -1,10 +1,8 @@
 import React from "react";
 
 const MessageBubble = ({ message, currentUserId }) => {
-  console.log("RAW MESSAGE:", message);
 
   const msg = message.receiverId ? message.message : message;
-  console.log("FINAL MSG:", msg);
 
   const isOwnMessage =
     msg.senderId?._id?.toString() === currentUserId?.toString();

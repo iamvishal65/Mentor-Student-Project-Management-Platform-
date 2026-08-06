@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const WS_URL = "ws://localhost:5000";
+const WS_URL = import.meta.env.VITE_WS_URL;
 
 const useChatSocket = ({ onMessage, onStatus, onTyping, onNotification }) => {
   const wsRef = useRef(null);
